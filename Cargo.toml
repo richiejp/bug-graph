@@ -1,0 +1,17 @@
+[package]
+name = "bug-graph"
+version = "0.1.0"
+authors = ["Richard Palethorpe <richiejp@f-m.fm>"]
+
+[dependencies]
+clap = "*"
+serde_json = "*"
+uuid = { version = "0.6", features = ["v1", "v4"] }
+lazy_static = "*"
+futures = "0.1"
+actix = "*"
+actix-web = "*"
+log = "0.4"
+
+[dependencies.indradb-lib]
+git = "https://github.com/indradb/indradb"

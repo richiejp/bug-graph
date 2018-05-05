@@ -1,0 +1,33 @@
+* Project organisation
+** Current state
+   Presently the entire project is in a prototype phase where the objective is
+   to build an end-to-end solution as fast as possible which tests the
+   following hypotheses.
+
+   If the hypotheses are proven correct then it will enter a cleanup and
+   refactoring phase where the only goal will be long term
+   maintainability. After which new modules will be added with there own
+   phases or some other approach will be taken.
+** Hypotheses [0/6]
+   These hypotheses are for the current system design, which is an Indradb
+   graph database (and simple key-value map for indexing or whatever) and some
+   Rust web framework. The database can be in-memory or with rocksdb if
+   necessary.
+*** TODO Can use Actix actors for the main components
+    It should be easy to represent things like the database/repo as an Actor
+*** TODO Can use Actix to create an Erlang style application
+    Individual actors should be able to be killed at random and the
+    application can recover
+*** TODO Can display a comparative matrix view of test results
+    It should be reasonably easy to query a graph database to produce a table
+    view of test results for one or more tests. The main reason being to
+    compare the results of a test in different environments.
+*** TODO Can be used to identify which bug causes a test failure
+    Bug-graph simply needs to suggest the correct bugs for the test results
+    most of the time if the user previously identified a connection. The user
+    can confirm which connections are correct.
+*** TODO A report can be created showing the bugs connected with test failures
+    Simply needs to be a markdown document listing test failure-bug pairs for
+    one or more product revisions.
+*** TODO Several months of LTP results can be stored for multiple products
+    Stored and queried.
