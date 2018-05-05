@@ -58,27 +58,6 @@ impl ProgArgs {
     }
 }
 
-// fn dump_to_dot(t: &Transaction, file_path: &str) {
-//     use std::fs::File;
-//     use std::io::prelude::*;
-
-//     let edges = t.get_edges(&EdgeQuery::Pipe {
-//         vertex_query: Box::new(VertexQuery::All { start_id: None, limit: 1000 }),
-//         converter: EdgeDirection::Outbound,
-//         type_filter: None,
-//         high_filter: None,
-//         low_filter: None,
-//         limit: 100,
-//     }).unwrap();
-//     let df = File::create(file_path).unwrap();
-
-//     writeln!(&df, "digraph {{").unwrap();
-//     for e in edges {
-//         writeln!(&df, "\"{}\" -> \"{}\"", e.key.outbound_id, e.key.inbound_id).unwrap();
-//     }
-//     writeln!(&df, "}}").unwrap();
-// }
-
 fn main() {
     let pargs = ProgArgs::parse();
     let sys = System::new("Bug Graph");
@@ -95,8 +74,4 @@ fn main() {
     }
 
     sys.run();
-
-    if let Some(dot) = pargs.dot_path {
-        dump_to_dot(&t, &dot);
-    }
 }
