@@ -16,15 +16,17 @@ mod imp;
 mod web;
 mod journal;
 
-use actix::prelude::*;
+use futures::Future;
+use actix::{msgs::StartActor, prelude::*};
 use actix::actors::signal::DefaultSignalsHandler;
-use repo::Repo;
+use actix_web::server;
 
+use repo::Repo;
 use imp::{Importer, ScanDir};
+use journal::Journal;
 
 struct ProgArgs {
     json_path: String,
-    dot_path: Option<String>,
     web: Option<String>,
 }
 
@@ -46,28 +48,42 @@ impl ProgArgs {
 
         Self {
             json_path: args.value_of("JSON_FILE").unwrap().to_string(),
-            dot_path: args.value_of("DOT_FILE").map(|v| v.to_string()),
             web: args.value_of("web").map(|v| v.to_string()),
         }
     }
 }
 
 fn main() {
-    let pargs = ProgArgs::parse();
     let sys = System::new("Bug Graph");
-    let signals: Addr<Unsync, _> = DefaultSignalsHandler::default().start();
+    let _journal = Arbiter::system_registry().get::<Journal>();
+    let pargs = ProgArgs::parse();
 
-    let repo = Arbiter::start(|_| Repo::default());
-    let imp = {
-        let repo = repo.clone();
-        Arbiter::start(|_| Importer::new(repo))
-    };
-    imp.do_send(ScanDir { dir: pargs.json_path, ext: "json".to_string() });
+    let repo_arb = Arbiter::new("repository");
+    let imp_arb = Arbiter::new("importer");
 
-    if let Some(ref addr) = pargs.web {
-        web::run(addr);
+    let _signals: Addr<Unsync, _> = DefaultSignalsHandler::default().start();
+    {
+        let json_path = pargs.json_path.clone();
+        let imp_arb = imp_arb.clone();
+
+        Arbiter::handle().spawn(repo_arb
+            .send(StartActor::new(|_| Repo::default()))
+            .then(move |repo| match repo {
+                Ok(repo) => imp_arb.send(StartActor::new(move |_| Importer::new(repo))),
+                Err(e) => panic!("Could not start repository: {}", e),
+            })
+            .then(|imp| match imp {
+                Ok(imp) => imp.send(ScanDir { dir: json_path, ext: "json".to_string() }),
+                Err(e) => panic!("Could not start importer: {}", e),
+            })
+            .map_err(|e| error!("Scan directory: {}", e)));
     }
 
-    info!("System started");
+    if let Some(ref addr) = pargs.web {
+        if let Err(e) = server::new(|| web::new()).bind(addr) {
+            error!("Failed to start web server on {}: {}", addr, e);
+        }
+    }
+
     sys.run();
 }

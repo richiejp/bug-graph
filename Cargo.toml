@@ -9,7 +9,11 @@ serde_json = "*"
 uuid = { version = "0.5", features = ["v1", "v4"] }
 lazy_static = "*"
 futures = "0.1"
-actix = { path = "../actix" }
+actix = "0.5.6"
 actix-web = "*"
-log = "0.4"
+log = { version = "0.4", features = ["max_level_info"] }
 indradb-lib = { git = "https://github.com/indradb/indradb" }
+
+[patch.crates-io]
+actix = { path = "../actix" }
+actix-web = { path = "../actix-web" }

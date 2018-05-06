@@ -42,8 +42,10 @@ impl Importer {
         }).filter_map(move |ent| {
             let fp = ent.path();
             if fp.extension().map_or(false, |e| e == ext) {
+                info!("Reading file: {}", fp.display());
                 Some(Importer::read_file(fp))
             } else {
+                info!("Ignoring file: {}", fp.display());
                 None
             }
         })
@@ -58,6 +60,8 @@ impl Handler<ScanDir> for Importer {
     type Result = ();
 
     fn handle(&mut self, msg: ScanDir, ctx: &mut Self::Context) {
+        info!("Scanning directory: {}", &msg.dir);
+
         for json in Importer::read_files(msg.dir, msg.ext) {
             ctx.notify(Import(json));
         }
@@ -71,15 +75,17 @@ impl Handler<Import> for Importer {
         use serde_json::{self, *};
 
         let mut v: Value = serde_json::from_str(&msg.0).unwrap();
-        let mut env = v["environment"].as_object_mut().unwrap();
-        let product = format!("environment:product:{}:{}",
-                              env.remove("product").unwrap().as_str().unwrap(),
-                              env.remove("revision").unwrap().as_str().unwrap());
-        let mut env_props = vec![product];
-
-        for (key, val) in env.iter() {
-            env_props.push(format!("environment:{}:{}", key, val));
-        }
+        let env_props = {
+            let mut env = v["environment"].as_object_mut().unwrap();
+            let product = format!("environment:product:{}:{}",
+                                  env.remove("product").unwrap().as_str().unwrap(),
+                                  env.remove("revision").unwrap().as_str().unwrap());
+            let mut props = vec![product];
+            for (key, val) in env.iter() {
+                props.push(format!("environment:{}:{}", key, val));
+            }
+            props
+        };
 
         for r in v["results"].as_array().unwrap() {
             let mut props = env_props.clone();

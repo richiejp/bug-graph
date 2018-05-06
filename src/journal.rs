@@ -18,6 +18,9 @@ pub struct Log {
     msg: String,
 }
 
+#[derive(Message)]
+pub struct InitLogFacade;
+
 pub struct Journal {
     genesis: Instant,
 }
@@ -32,6 +35,19 @@ impl Default for Journal {
 
 impl Actor for Journal {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        log::set_max_level(LevelFilter::Trace);
+
+        if let Err(e) = log::set_logger(&FACADE) {
+            ctx.notify(Log {
+                src: "ERROR Journal".into(),
+                msg: format!("Failed to init the log crate facade: {}", e),
+            });
+        } else {
+            info!("Log facade initialised");
+        }
+    }
 }
 
 impl Supervised for Journal {}
@@ -50,6 +66,13 @@ impl Handler<Log> for Journal {
     }
 }
 
+impl Handler<InitLogFacade> for Journal {
+    type Result = ();
+
+    fn handle(&mut self, _: InitLogFacade, ctx: &mut Context<Self>) {
+    }
+}
+
 struct JournalFacade;
 
 impl log::Log for JournalFacade {
@@ -59,6 +82,9 @@ impl log::Log for JournalFacade {
     }
 
     fn log(&self, r: &Record) {
+        if Arbiter::name() == "Arbiter is not running" {
+            return;
+        }
         let arb = Arbiter::handle();
         let journal = JOURNAL.with(|cell| {
             if let Some(ref j) = *cell.borrow() {
@@ -80,9 +106,4 @@ impl log::Log for JournalFacade {
     }
 
     fn flush(&self) {}
-}
-
-pub fn init() -> Result<(), SetLoggerError> {
-    log::set_max_level(LevelFilter::Info);
-    log::set_logger(&FACADE)
 }
