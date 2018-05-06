@@ -6,12 +6,10 @@ authors = ["Richard Palethorpe <richiejp@f-m.fm>"]
 [dependencies]
 clap = "*"
 serde_json = "*"
-uuid = { version = "0.6", features = ["v1", "v4"] }
+uuid = { version = "0.5", features = ["v1", "v4"] }
 lazy_static = "*"
 futures = "0.1"
-actix = "*"
+actix = { path = "../actix" }
 actix-web = "*"
 log = "0.4"
-
-[dependencies.indradb-lib]
-git = "https://github.com/indradb/indradb"
+indradb-lib = { git = "https://github.com/indradb/indradb" }

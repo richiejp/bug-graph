@@ -1,6 +1,6 @@
-use actix_web::{server, Application, HttpRequest, HttpResponse};
+use actix_web::{server, Application, HttpRequest};
 
-fn index(req: HttpRequest) -> &'static str {
+fn index(_req: HttpRequest) -> &'static str {
     "Hello world!"
 }
 

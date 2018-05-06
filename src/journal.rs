@@ -54,7 +54,7 @@ struct JournalFacade;
 
 impl log::Log for JournalFacade {
 
-    fn enabled(&self, metadata: &Metadata) -> bool {
+    fn enabled(&self, _: &Metadata) -> bool {
         true
     }
 
