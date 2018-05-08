@@ -134,7 +134,7 @@ impl Handler<NewResult> for Repo {
             new_edge(&t, &test, &ISIN_ET, prop);
         }
 
-        info!("Added test result for {}", &msg.test_fqn);
+        //info!("Added test result for {}", &msg.test_fqn);
         MessageResult(result)
     }
 }

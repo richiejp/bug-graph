@@ -17,8 +17,7 @@ mod web;
 mod journal;
 
 use futures::Future;
-use actix::{msgs::StartActor, prelude::*};
-use actix::actors::signal::DefaultSignalsHandler;
+use actix::{msgs::{Execute, StartActor}, prelude::*};
 use actix_web::server;
 
 use repo::Repo;
@@ -55,13 +54,15 @@ impl ProgArgs {
 
 fn main() {
     let sys = System::new("Bug Graph");
-    let _journal = Arbiter::system_registry().get::<Journal>();
-    let pargs = ProgArgs::parse();
+    let journal = Arbiter::system_registry().get::<Journal>();
+    journal.do_send(journal::Log { src: "main".into(),
+                                   msg: "Bug Graph 0.1.0".into() });
 
+    let pargs = ProgArgs::parse();
     let repo_arb = Arbiter::new("repository");
     let imp_arb = Arbiter::new("importer");
+    let web_arb = Arbiter::new("web");
 
-    let _signals: Addr<Unsync, _> = DefaultSignalsHandler::default().start();
     {
         let json_path = pargs.json_path.clone();
         let imp_arb = imp_arb.clone();
@@ -79,11 +80,17 @@ fn main() {
             .map_err(|e| error!("Scan directory: {}", e)));
     }
 
-    if let Some(ref addr) = pargs.web {
-        if let Err(e) = server::new(|| web::new()).bind(addr) {
-            error!("Failed to start web server on {}: {}", addr, e);
-        }
-    }
+    web_arb.do_send(Execute::new(move || -> Result<(), ()> {
+        let addr = pargs.web.unwrap();
+        match server::new(|| web::new()).bind(addr.clone()) {
+            Err(e) => error!("Failed to bind web server to {}: {}", addr, e),
+            Ok(srv) => {
+                srv.start();
+            }
+        };
+        Ok(())
+    }));
 
+    journal::init();
     sys.run();
 }

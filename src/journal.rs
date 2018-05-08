@@ -4,7 +4,7 @@ use std::fmt;
 
 use futures::Future;
 use actix::prelude::*;
-use log::{self, Record, Level, Metadata, SetLoggerError, LevelFilter};
+use log::{self, Record, Level, Metadata, LevelFilter};
 
 static FACADE: JournalFacade = JournalFacade;
 
@@ -14,12 +14,9 @@ thread_local!(
 
 #[derive(Message)]
 pub struct Log {
-    src: String,
-    msg: String,
+    pub src: String,
+    pub msg: String,
 }
-
-#[derive(Message)]
-pub struct InitLogFacade;
 
 pub struct Journal {
     genesis: Instant,
@@ -35,19 +32,6 @@ impl Default for Journal {
 
 impl Actor for Journal {
     type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        log::set_max_level(LevelFilter::Trace);
-
-        if let Err(e) = log::set_logger(&FACADE) {
-            ctx.notify(Log {
-                src: "ERROR Journal".into(),
-                msg: format!("Failed to init the log crate facade: {}", e),
-            });
-        } else {
-            info!("Log facade initialised");
-        }
-    }
 }
 
 impl Supervised for Journal {}
@@ -58,18 +42,11 @@ impl Handler<Log> for Journal {
 
     fn handle(&mut self, log: Log, _ctx: &mut Context<Self>) {
         let d = self.genesis.elapsed();
-        println!("{:>+4}:{:<04}[{}] {}",
-                 d.as_secs(),
-                 d.subsec_nanos() / 100_000,
-                 log.src,
-                 log.msg);
-    }
-}
-
-impl Handler<InitLogFacade> for Journal {
-    type Result = ();
-
-    fn handle(&mut self, _: InitLogFacade, ctx: &mut Context<Self>) {
+        eprintln!("{:>+4}:{:<04}[{}] {}",
+                  d.as_secs(),
+                  d.subsec_nanos() / 100_000,
+                  log.src,
+                  log.msg);
     }
 }
 
@@ -83,7 +60,9 @@ impl log::Log for JournalFacade {
 
     fn log(&self, r: &Record) {
         if Arbiter::name() == "Arbiter is not running" {
-            return;
+            eprintln!("<SysDown> [{:5} {}] {}",
+                      r.level(), r.module_path().unwrap_or("Unknown"),
+                      r.args());
         }
         let arb = Arbiter::handle();
         let journal = JOURNAL.with(|cell| {
@@ -106,4 +85,11 @@ impl log::Log for JournalFacade {
     }
 
     fn flush(&self) {}
+}
+
+pub fn init() {
+    log::set_max_level(LevelFilter::Trace);
+    if let Err(e) = log::set_logger(&FACADE) {
+        eprintln!("Init logger failed: {}", e);
+    }
 }
