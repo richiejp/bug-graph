@@ -2,6 +2,7 @@
 name = "bug-graph"
 version = "0.1.0"
 authors = ["Richard Palethorpe <richiejp@f-m.fm>"]
+exclude = ["client/**/*"]
 
 [dependencies]
 clap = "*"
