@@ -2,7 +2,7 @@
 name = "bug-graph"
 version = "0.1.0"
 authors = ["Richard Palethorpe <richiejp@f-m.fm>"]
-include = ["res/**/*", "src/**/*", "Cargo.toml", "README.org",
+include = ["res/**/*", "src/**/*", "Cargo.toml", "README.org", "build.rs",
 	   "client/src/**/*", "client/Cargo.toml", "client/Web.toml", "client/static/**/*"]
 
 [dependencies]

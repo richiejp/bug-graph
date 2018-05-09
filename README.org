@@ -8,16 +8,24 @@
    refactoring phase where the only goal will be long term
    maintainability. After which new modules will be added with there own
    phases or some other approach will be taken.
-** Hypotheses [0/6]
+** Hypotheses [2/7]
    These hypotheses are for the current system design, which is an Indradb
    graph database (and simple key-value map for indexing or whatever) and some
    Rust web framework. The database can be in-memory or with rocksdb if
    necessary.
-*** TODO Can use Actix actors for the main components
+*** DONE Can use Actix actors for the main components
     It should be easy to represent things like the database/repo as an Actor
-*** TODO Can use Actix to create an Erlang style application
+*** DONE Can use Actix to create an Erlang style application
+**** Hypotheses
     Individual actors should be able to be killed at random and the
-    application can recover
+    application can recover.
+**** Result
+     actix-web proves this itself, as when a web worker panics it is restarted
+     automatically. However I have not figured out how to do this with normal
+     actors yet. I know how to catch a panic, but I am not sure if it really
+     makes sense to do this or where to do it. So I am not sure how close one
+     can get to Erlang. It is probably best to avoid panics unlike in
+     Erlang. However I am satisfied that it can be done to a reasonable level.
 *** TODO Can display a comparative matrix view of test results
     It should be reasonably easy to query a graph database to produce a table
     view of test results for one or more tests. The main reason being to
@@ -31,3 +39,7 @@
     one or more product revisions.
 *** TODO Several months of LTP results can be stored for multiple products
     Stored and queried.
+** Tasks [0/2]
+   Similar to hypotheses, but they can be added and removed more easily.
+*** TODO Use websockets to send a list of tests and display them in yew
+*** TODO Show a test's adjacent vertices when it is clicked on
