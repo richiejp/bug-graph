@@ -6,7 +6,7 @@ extern crate yew;
 use failure::Error;
 use stdweb::web;
 use yew::prelude::*;
-use yew::services::Task;
+use yew::format::{Text, Binary};
 use yew::services::websocket::{WebSocketService, WebSocketTask, WebSocketStatus};
 
 struct Context {
@@ -19,13 +19,44 @@ impl AsMut<WebSocketService> for Context {
     }
 }
 
+enum WsMsg {
+    Text(String),
+    Bin(Vec<u8>),
+    Err(Error),
+}
+
+impl WsMsg {
+    pub fn txt<S: Into<String>>(msg: S) -> WsMsg {
+        let s = msg.into();
+        WsMsg::Text(s)
+    }
+}
+
+impl From<Binary> for WsMsg {
+    fn from(val: Binary) -> Self {
+        match val {
+            Ok(b) => WsMsg::Bin(b),
+            Err(e) => WsMsg::Err(e),
+        }
+    }
+}
+
+impl From<Text> for WsMsg {
+    fn from(val: Text) -> Self {
+        match val {
+            Ok(s) => WsMsg::Text(format!("Received: {}", s)),
+            Err(e) => WsMsg::Err(e),
+        }
+    }
+}
+
 struct Model {
     ws: Option<WebSocketTask>,
-    log: Vec<String>,
+    log: Vec<WsMsg>,
 }
 
 enum Msg {
-    Recv(Result<String, Error>),
+    Recv(WsMsg),
     Stat(WebSocketStatus),
 }
 
@@ -37,29 +68,33 @@ where
     type Properties = ();
 
     fn create(_: Self::Properties, env: &mut Env<C, Self>) -> Self {
-        let wss: &mut WebSocketService = env.as_mut();
         let url = ws_url();
-        let cb = env.send_back(|text| Msg::Recv(text));
+        let cb = env.send_back(|text: WsMsg| Msg::Recv(text));
         let evt = env.send_back(|status| Msg::Stat(status));
+        let wss: &mut WebSocketService = env.as_mut();
         let task = wss.connect(&url, cb, evt);
 
         Model {
             ws: Some(task),
-            log: Vec::default(),
+            log: vec![ WsMsg::txt("Test") ],
         }
     }
 
-    fn update(&mut self, msg: Self::Message, env: &mut Env<C, Self>) -> ShouldRender {
+    fn update(&mut self, msg: Self::Message, _env: &mut Env<C, Self>) -> ShouldRender {
         match msg {
             Msg::Stat(s) => match s {
-                WebSocketStatus::Opened => self.log.push("Opened websocket".into()),
-                WebSocketStatus::Closed => self.log.push("Closed websocket".into()),
-                WebSocketStatus::Error => self.log.push("Error on websocket".into()),
+                WebSocketStatus::Opened => {
+                    self.log.push(WsMsg::txt("Opened websocket"));
+                },
+                WebSocketStatus::Closed => {
+                    self.log.push(WsMsg::txt("Closed websocket"));
+                    self.ws = None;
+                },
+                WebSocketStatus::Error => {
+                    self.log.push(WsMsg::txt("Error on websocket"));
+                },
             },
-            Msg::Recv(res) => match res {
-                Ok(resp) => self.log.push(format!("Server: {}", resp)),
-                Err(e) => self.log.push(format!("Error receiving: {}", e)),
-            }
+            Msg::Recv(res) => self.log.push(res),
         }
         true
     }
@@ -76,23 +111,34 @@ where
                 <h1 class="title",>{ "Bug Graph" }</h1>
                 <p class="subtitle",>{ "Ruining the pychology of bugs everywhere!" }</p>
                 </div>
-                <div class="container",>{ self.render_messages() }</div>
+                <div class="container",>{
+                    for self.log.iter().map(|m| render_message(m))
+                }</div>
             </section>
         }
     }
 }
 
-impl Model
+fn render_message<C>(msg: &WsMsg) -> Html<C, Model>
+where
+    C: AsMut<WebSocketService> + 'static,
 {
-    fn render_messages<C>(&self) -> Html<C, Model>
-    where
-        C: AsMut<WebSocketService> + 'static,
-    {
-        self.log.iter()
-            html! {
-                <div class="notification is-info",>{ msg }</div>
-            }
-        }
+    match msg {
+        WsMsg::Text(ref s) => html! {
+            <div class=("notification", "is-info"),>{
+                s
+            }</div>
+        },
+        WsMsg::Bin(_) => html! {
+            <div class=("notification", "is-warning"),>{
+                "Received a binary message; no idea what to do with it..."
+            }</div>
+       },
+       WsMsg::Err(e) => html! {
+            <div class=("notification", "is-danger"),>{
+                format!("Error while receiving: {}", e)
+            }</div>
+       },
     }
 }
 
