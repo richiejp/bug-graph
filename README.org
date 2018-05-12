@@ -62,3 +62,6 @@
 **** DONE Serialise list as JSON on server and send it
 **** DONE Deserialise JSON on client and display it
 *** TODO Show a test's adjacent vertices when it is clicked on
+* License
+  This project and all associated code is licensed under the GPL 3 unless
+  otherwise stated within the file.
