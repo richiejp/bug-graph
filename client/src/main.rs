@@ -1,13 +1,19 @@
 extern crate failure;
 extern crate stdweb;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate yew;
+
+mod protocol;
 
 use failure::Error;
 use stdweb::web;
 use yew::prelude::*;
-use yew::format::{Text, Binary};
+use yew::format::Json;
 use yew::services::websocket::{WebSocketService, WebSocketTask, WebSocketStatus};
+
+use protocol::{Notice, ClientServer, ServerClient};
 
 struct Context {
     ws: WebSocketService,
@@ -19,45 +25,16 @@ impl AsMut<WebSocketService> for Context {
     }
 }
 
-enum WsMsg {
-    Text(String),
-    Bin(Vec<u8>),
-    Err(Error),
-}
-
-impl WsMsg {
-    pub fn txt<S: Into<String>>(msg: S) -> WsMsg {
-        let s = msg.into();
-        WsMsg::Text(s)
-    }
-}
-
-impl From<Binary> for WsMsg {
-    fn from(val: Binary) -> Self {
-        match val {
-            Ok(b) => WsMsg::Bin(b),
-            Err(e) => WsMsg::Err(e),
-        }
-    }
-}
-
-impl From<Text> for WsMsg {
-    fn from(val: Text) -> Self {
-        match val {
-            Ok(s) => WsMsg::Text(format!("Received: {}", s)),
-            Err(e) => WsMsg::Err(e),
-        }
-    }
-}
-
 struct Model {
     ws: Option<WebSocketTask>,
-    log: Vec<WsMsg>,
+    notices: Vec<Notice>,
+    tests: Option<Vec<String>>,
 }
 
 enum Msg {
-    Recv(WsMsg),
+    Recv(Result<ServerClient, Error>),
     Stat(WebSocketStatus),
+    Send(ClientServer),
 }
 
 impl<C> Component<C> for Model
@@ -69,34 +46,44 @@ where
 
     fn create(_: Self::Properties, env: &mut Env<C, Self>) -> Self {
         let url = ws_url();
-        let cb = env.send_back(|text: WsMsg| Msg::Recv(text));
+        let cb = env.send_back(|Json(msg)| Msg::Recv(msg));
         let evt = env.send_back(|status| Msg::Stat(status));
         let wss: &mut WebSocketService = env.as_mut();
         let task = wss.connect(&url, cb, evt);
 
         Model {
             ws: Some(task),
-            log: vec![ WsMsg::txt("Test") ],
+            notices: Vec::default(),
+            tests: None,
         }
     }
 
     fn update(&mut self, msg: Self::Message, _env: &mut Env<C, Self>) -> ShouldRender {
         match msg {
-            Msg::Stat(s) => match s {
+            Msg::Stat(s) => { match s {
                 WebSocketStatus::Opened => {
-                    self.log.push(WsMsg::txt("Opened websocket"));
+                    self.notices.push(Notice::succ("Opened websocket"));
                 },
                 WebSocketStatus::Closed => {
-                    self.log.push(WsMsg::txt("Closed websocket"));
+                    self.notices.push(Notice::info("Closed websocket"));
                     self.ws = None;
                 },
                 WebSocketStatus::Error => {
-                    self.log.push(WsMsg::txt("Error on websocket"));
+                    self.notices.push(Notice::error("Error on websocket"));
                 },
+            } true },
+            Msg::Recv(res) => { match res {
+                Ok(ServerClient::Notify(n)) => self.notices.push(n),
+                Ok(ServerClient::TestList(l)) => self.tests = Some(l),
+                Err(e) => self.notices.push(
+                    Notice::error(format!("Could not parse message from server: {}", e))
+                ),
+            } true },
+            Msg::Send(m) => {
+                self.ws.as_mut().unwrap().send_binary(Json(&m));
+                false
             },
-            Msg::Recv(res) => self.log.push(res),
         }
-        true
     }
 }
 
@@ -105,40 +92,75 @@ where
     C: AsMut<WebSocketService> + 'static,
 {
     fn view(&self) -> Html<C, Self> {
-        html! {
-            <section class="section",>
-                <div class="container",>
-                <h1 class="title",>{ "Bug Graph" }</h1>
-                <p class="subtitle",>{ "Ruining the pychology of bugs everywhere!" }</p>
+        html! {<>
+          <section class=("hero","is-primary","is-bold"),>
+            <div class="hero-body",>
+              <div class="container",>
+                <h1 class="title",>{
+                    "Bug Graph"
+                }</h1>
+                <h2 class="subtitle",>{
+                    "Connecting bugs and test results"
+                }</h2>
+              </div>
+            </div>
+          </section>
+          <section class="section",>
+            <div class=("container","is-fluid"),>
+              <div class="columns",>
+                <div class=("column","is-narrow"),>
+                  <button class="button", onclick=|_| Msg::Send(ClientServer::TestQuery),>{
+                    "Get tests"
+                  }</button>
                 </div>
-                <div class="container",>{
-                    for self.log.iter().map(|m| render_message(m))
-                }</div>
-            </section>
+               <div class=("column", "is-centered"),>{
+                   render_set_list(&self.tests)
+               }</div>
+              </div>
+            </div>
+          </section>
+          <footer class="footer",><div class="container",>{
+             for self.notices.iter().map(|m| render_notice(m))
+          }</div></footer>
+        </>}
+    }
+}
+
+fn render_set_list<C>(list: &Option<Vec<String>>) -> Html<C, Model>
+where
+    C: AsMut<WebSocketService> + 'static,
+{
+    if let Some(l) = list {
+        html! {
+          <table class="table",>
+            <thead>
+              <tr><th><abbr title="Test, Product or Set name",>{
+                "Name"
+              }</abbr></th></tr>
+            </thead>
+            <tbody>{
+                for l.iter().map(|t| { html! { <tr><td>{ t }</td></tr> } })
+            }</tbody>
+         </table>
+       }
+    } else {
+        html! {
+            <div class=("notification","has-text-light"),>{
+                "Nothing to see here... yet."
+            }</div>
         }
     }
 }
 
-fn render_message<C>(msg: &WsMsg) -> Html<C, Model>
+fn render_notice<C>(notice: &Notice) -> Html<C, Model>
 where
     C: AsMut<WebSocketService> + 'static,
 {
-    match msg {
-        WsMsg::Text(ref s) => html! {
-            <div class=("notification", "is-info"),>{
-                s
-            }</div>
-        },
-        WsMsg::Bin(_) => html! {
-            <div class=("notification", "is-warning"),>{
-                "Received a binary message; no idea what to do with it..."
-            }</div>
-       },
-       WsMsg::Err(e) => html! {
-            <div class=("notification", "is-danger"),>{
-                format!("Error while receiving: {}", e)
-            }</div>
-       },
+    html! {
+        <div class=("notification", notice.css_class()),>
+            <button class="delete",></button>
+            { &notice.msg }
+        </div>
     }
 }
 

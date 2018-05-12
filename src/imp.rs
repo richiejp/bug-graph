@@ -91,7 +91,9 @@ impl Handler<Import> for Importer {
             let mut props = env_props.clone();
 
             for (key, val) in r["test"].as_object().unwrap() {
-                props.push(format!("test:{}:{}", key, val));
+                if (key != "log" && key != "duration") {
+                    props.push(format!("test:{}:{}", key, val));
+                }
             }
 
             let status = if r["status"] == "pass" {

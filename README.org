@@ -1,3 +1,17 @@
+* Synopsis
+  This is an experimental project to analyse test results and automatically
+  connect them with existing bug reports.
+
+  This is the second version, the first was basically a MongoDB script and
+  worked reasonably well so long as it was me using it. However it was far too
+  easy to get working and I decided I needed 400% more unstable technologies,
+  so here is the Actix-IndraDB-WASM-Yew, all Rust, version.
+* Building & Installing
+** Prerequisites
+  There is no crate, so you will have to clone and compile. You will at least
+  need `cargo-web`, Rust nightly and `wasm32-unknown-unknown`. Also see the
+  Cargo.toml, you will need to clone some repos and maybe override the patch
+  section.
 * Project organisation
 ** Current state
    Presently the entire project is in a prototype phase where the objective is
@@ -39,7 +53,12 @@
     one or more product revisions.
 *** TODO Several months of LTP results can be stored for multiple products
     Stored and queried.
-** Tasks [0/2]
-   Similar to hypotheses, but they can be added and removed more easily.
-*** TODO Use websockets to send a list of tests and display them in yew
+** Tasks [1/2]
+   Similar to hypotheses, but they can be added and removed without having to
+   consider if removing one is a sign of project failure.
+*** DONE Use websockets to send a list of tests and display them in yew
+    Managed to communicate with web sockets and created Repo message to get a
+    list. Now need to:
+**** DONE Serialise list as JSON on server and send it
+**** DONE Deserialise JSON on client and display it
 *** TODO Show a test's adjacent vertices when it is clicked on

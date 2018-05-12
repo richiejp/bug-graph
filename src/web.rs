@@ -1,45 +1,90 @@
 
-use actix::prelude::*;
+use serde_json;
+use actix::{prelude::*, fut::ok};
 use actix_web::*;
 use actix_web::fs::NamedFile;
 use actix_web::http::Method;
 
-pub struct Ws;
+use repo::{Repo, GetSetVerts};
+use protocol::{ClientServer, ServerClient};
+
+pub struct AppState {
+    repo: Addr<Syn, Repo>,
+}
+
+struct Ws {
+    repo: Addr<Syn, Repo>,
+}
 
 impl Actor for Ws {
-    type Context = ws::WebsocketContext<Self>;
+    type Context = ws::WebsocketContext<Self, AppState>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        ctx.text("Hello from WS server!");
+        let hello = serde_json::to_vec(
+            &ServerClient::info_notice("Hello from WS server!")
+        ).expect("Creating static hello message");
+        ctx.binary(hello);
     }
 }
 
 impl StreamHandler<ws::Message, ws::ProtocolError> for Ws {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-        match msg {
+        let msg: Result<ClientServer, _> = match msg {
             ws::Message::Text(text) => {
-                ctx.text(format!("You sent me: {}", text));
+                info!("Websocket received: {}", text);
+                serde_json::from_str(&text)
+            },
+            ws::Message::Binary(bin) => {
+                info!("Websocket received binary");
+                serde_json::from_slice(bin.as_ref())
+            },
+            _ => {
+                warn!("Received unexpected web socket msg: {:?}", msg);
+                ctx.stop();
+                return;
             }
-            _ => ()
+        };
+        match msg {
+            Ok(m) => match m {
+                ClientServer::TestQuery => {
+                    ctx.spawn(self.repo.send(GetSetVerts).into_actor(self).then(|res, _, ctx| ok(match res {
+                        Ok(sets) => {
+                            ctx.binary(
+                                serde_json::to_vec(&ServerClient::TestList(sets))
+                                    .expect("Serialize test list as JSON")
+                            );
+                        },
+                        Err(e) => {
+                            error!("Repo error: {}", e);
+                            ctx.stop();
+                        },
+                    })));
+                },
+            },
+            Err(e) => {
+                error!("Could not deserialize ClientServer message: {}", e);
+                ctx.stop();
+            }
         }
     }
 }
 
-fn index(_req: HttpRequest) -> Result<NamedFile> {
+fn index(_req: HttpRequest<AppState>) -> Result<NamedFile> {
     Ok(NamedFile::open("res/static/index.html")?)
 }
 
-fn ws_index(req: HttpRequest) -> Result<HttpResponse> {
-    ws::start(req, Ws)
+fn ws_index(req: HttpRequest<AppState>) -> Result<HttpResponse> {
+    let repo = req.state().repo.clone();
+    ws::start(req, Ws { repo: repo })
 }
 
 fn static_file(file: Path<String>) -> Result<NamedFile> {
     Ok(NamedFile::open(format!("res/static/{}", *file))?)
 }
 
-pub fn new() -> App<()>
+pub fn new(repo: Addr<Syn, Repo>) -> App<AppState>
 {
-    App::new()
+    App::with_state(AppState{ repo: repo })
         .resource("/", |r| r.method(Method::GET).f(index))
         .resource("/ws/", |r| r.f(ws_index))
         // For now non capture groups (?: ...) confuse the actix-web parser

@@ -11,13 +11,6 @@ macro_rules! itype {
     )
 }
 
-// pub static PASS: &str = "passed";
-// pub static FAIL: &str = "failed";
-// pub static ISIN: &str = "is_in";
-// pub static TEST: &str = "test";
-// pub static TEST_RES: &str = "result";
-// pub static SET: &str = "set";
-
 lazy_static! {
     pub static ref PASS_ET: Type = itype!(passed);
     pub static ref FAIL_ET: Type = itype!(failed);
@@ -49,6 +42,10 @@ pub struct NewResult {
     pub status: TestStatus,
     pub properties: Vec<String>
 }
+
+#[derive(Message)]
+#[rtype(result = "Vec<String>")]
+pub struct GetSetVerts;
 
 type VertIndex = HashMap<String, Uuid>;
 
@@ -136,5 +133,13 @@ impl Handler<NewResult> for Repo {
 
         //info!("Added test result for {}", &msg.test_fqn);
         MessageResult(result)
+    }
+}
+
+impl Handler<GetSetVerts> for Repo {
+    type Result = MessageResult<GetSetVerts>;
+
+    fn handle(&mut self, _msg: GetSetVerts, _: &mut Self::Context) -> Self::Result {
+        MessageResult(self.id_indx.keys().map(|k| k.clone()).collect())
     }
 }

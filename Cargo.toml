@@ -7,7 +7,9 @@ include = ["res/**/*", "src/**/*", "Cargo.toml", "README.org", "build.rs",
 
 [dependencies]
 clap = "*"
-serde_json = "*"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
 uuid = { version = "0.5", features = ["v1", "v4"] }
 lazy_static = "*"
 futures = "0.1"

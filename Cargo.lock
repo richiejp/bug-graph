@@ -201,6 +201,8 @@ dependencies = [
  "indradb-lib 0.14.0 (git+https://github.com/indradb/indradb)",
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.50 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.50 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

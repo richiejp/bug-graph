@@ -1,6 +1,9 @@
 extern crate indradb;
 extern crate clap;
+extern crate serde;
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 extern crate uuid;
 #[macro_use]
 extern crate lazy_static;
@@ -15,6 +18,7 @@ mod repo;
 mod imp;
 mod web;
 mod journal;
+mod protocol;
 
 use futures::Future;
 use actix::{msgs::{Execute, StartActor}, prelude::*};
@@ -52,6 +56,18 @@ impl ProgArgs {
     }
 }
 
+fn start_web_server(web_arb: Addr<Syn, Arbiter>, repo: Addr<Syn, Repo>, url: String) {
+    web_arb.do_send(Execute::new(move || -> Result<(), ()> {
+        match server::new(move || web::new(repo.clone())).bind(url.clone()) {
+            Err(e) => error!("Failed to bind web server to {}: {}", url, e),
+            Ok(srv) => {
+                srv.start();
+            }
+        };
+        Ok(())
+    }));
+}
+
 fn main() {
     let sys = System::new("Bug Graph");
     let journal = Arbiter::system_registry().get::<Journal>();
@@ -70,7 +86,10 @@ fn main() {
         Arbiter::handle().spawn(repo_arb
             .send(StartActor::new(|_| Repo::default()))
             .then(move |repo| match repo {
-                Ok(repo) => imp_arb.send(StartActor::new(move |_| Importer::new(repo))),
+                Ok(repo) => {
+                    start_web_server(web_arb, repo.clone(), pargs.web.unwrap().into());
+                    imp_arb.send(StartActor::new(move |_| Importer::new(repo)))
+                },
                 Err(e) => panic!("Could not start repository: {}", e),
             })
             .then(|imp| match imp {
@@ -79,17 +98,6 @@ fn main() {
             })
             .map_err(|e| error!("Scan directory: {}", e)));
     }
-
-    web_arb.do_send(Execute::new(move || -> Result<(), ()> {
-        let addr = pargs.web.unwrap();
-        match server::new(|| web::new()).bind(addr.clone()) {
-            Err(e) => error!("Failed to bind web server to {}: {}", addr, e),
-            Ok(srv) => {
-                srv.start();
-            }
-        };
-        Ok(())
-    }));
 
     journal::init();
     sys.run();
