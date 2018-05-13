@@ -61,7 +61,7 @@ impl Notice {
 #[derive(Serialize, Deserialize)]
 pub enum ServerClient {
     Notify(Notice),
-    TestList(Vec<String>),
+    TestList(Vec<(String, String)>),
 }
 
 impl ServerClient {

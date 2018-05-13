@@ -59,7 +59,7 @@ pub struct NewResult {
 }
 
 #[derive(Message)]
-#[rtype(result = "Vec<String>")]
+#[rtype(result = "Vec<(String, Uuid)>")]
 pub struct GetSetVerts;
 
 type VertIndex = HashMap<String, Uuid>;
@@ -155,6 +155,8 @@ impl Handler<GetSetVerts> for Repo {
     type Result = MessageResult<GetSetVerts>;
 
     fn handle(&mut self, _msg: GetSetVerts, _: &mut Self::Context) -> Self::Result {
-        MessageResult(self.id_indx.keys().map(|k| k.clone()).collect())
+        MessageResult(
+            self.id_indx.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+        )
     }
 }

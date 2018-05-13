@@ -62,7 +62,10 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for Ws {
             Ok(m) => match m {
                 ClientServer::TestQuery => {
                     ctx.spawn(self.repo.send(GetSetVerts).into_actor(self).then(|res, _, ctx| ok(match res {
-                        Ok(sets) => {
+                        Ok(mut sets) => {
+                            let sets = sets.drain(..).map(|(name, uuid)| {
+                                (name, uuid.to_string())
+                            }).collect();
                             ctx.binary(
                                 serde_json::to_vec(&ServerClient::TestList(sets))
                                     .expect("Serialize test list as JSON")

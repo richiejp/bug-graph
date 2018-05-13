@@ -43,7 +43,7 @@ impl AsMut<WebSocketService> for Context {
 struct Model {
     ws: Option<WebSocketTask>,
     notices: Vec<Notice>,
-    tests: Option<Vec<String>>,
+    tests: Option<Vec<(String, String)>>,
 }
 
 enum Msg {
@@ -141,26 +141,36 @@ where
     }
 }
 
-fn render_set_list<C>(list: &Option<Vec<String>>) -> Html<C, Model>
+fn render_set_list<C>(list: &Option<Vec<(String, String)>>) -> Html<C, Model>
 where
     C: AsMut<WebSocketService> + 'static,
 {
     if let Some(l) = list {
         html! {
-          <table class="table",>
+          <table class=("table","is-hoverable"),>
             <thead>
-              <tr><th><abbr title="Test, Product or Set name",>{
-                "Name"
-              }</abbr></th></tr>
+              <tr>
+                <th><abbr title="Test, Product or Set name",>{
+                    "Name"
+                }</abbr></th>
+                <th><abbr title="Vertex UUID",>{
+                    "UUID"
+                }</abbr></th>
+              </tr>
             </thead>
             <tbody>{
-                for l.iter().map(|t| { html! { <tr><td>{ t }</td></tr> } })
+                for l.iter().map(|(name, uuid)| { html! {
+                    <tr>
+                        <td>{ name }</td>
+                        <td><a>{ uuid }</a></td>
+                   </tr>
+                } })
             }</tbody>
          </table>
        }
     } else {
         html! {
-            <div class=("notification","has-text-light"),>{
+            <div class=("notification","has-text-grey"),>{
                 "Nothing to see here... yet."
             }</div>
         }
