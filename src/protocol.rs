@@ -30,6 +30,7 @@ pub struct Notice {
 
 macro_rules! make_notices {
     ( $( $mname:ident, $tname:ident );+ ) => { $(
+        #[allow(dead_code)]
         pub fn $mname<S: Into<String>>(msg: S) -> Notice {
             Notice {
                 msg: msg.into(),
@@ -40,6 +41,7 @@ macro_rules! make_notices {
 }
 
 impl Notice {
+    #[allow(dead_code)]
     pub fn css_class(&self) -> &'static str {
         match self.flavor {
             Flavor::Error => "is-error",
