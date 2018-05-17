@@ -17,6 +17,8 @@ use std::process::{exit, Command};
 use std::fs;
 use std::io::ErrorKind;
 
+const STATIC: &str = "res/static";
+
 macro_rules! copy_files {
     ($from:expr, $to:expr, $( $file:expr ),+) => (
         $(
@@ -38,16 +40,14 @@ fn main() {
         exit(1);
     }
 
-    let canon = fs::canonicalize("res/static")
-        .expect("Canonicalize static folder path");
-    if let Err(e) = fs::create_dir(canon.clone()) {
+    if let Err(e) = fs::create_dir(STATIC) {
         if let ErrorKind::AlreadyExists = e.kind() {
-            println!("Static folder already exists: {}", canon.display());
+            println!("Static folder already exists: {}", STATIC);
         } else {
-            panic!("Can't create static folder ({}): {}", canon.display(), e);
+            panic!("Can't create static folder ({}): {}", STATIC, e);
         }
     } else {
-        println!("Created static folder: {}", canon.display());
+        println!("Created static folder: {}", STATIC);
     }
 
     copy_files!("client/target/deploy", "res/static",
