@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::VecDeque;
 use std::fs::{self, File};
 use std::ffi::OsString;
 use std::io::prelude::*;
@@ -86,7 +87,7 @@ impl Handler<ScanDir> for Importer {
 impl Handler<Import> for Importer {
     type Result = ();
 
-    fn handle(&mut self, msg: Import, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: Import, _ctx: &mut Self::Context) {
         use serde_json::{self, *};
 
         let mut v: Value = serde_json::from_str(&msg.0).unwrap();
@@ -102,11 +103,12 @@ impl Handler<Import> for Importer {
             props
         };
 
+        let mut reqs: VecDeque<Request<Syn, Repo, NewResult>> = VecDeque::with_capacity(8);
         for r in v["results"].as_array().unwrap() {
             let mut props = env_props.clone();
 
             for (key, val) in r["test"].as_object().unwrap() {
-                if (key != "log" && key != "duration") {
+                if key != "log" && key != "duration" {
                     props.push(format!("test:{}:{}", key, val));
                 }
             }
@@ -117,17 +119,18 @@ impl Handler<Import> for Importer {
                 TestStatus::Fail
             };
 
-            let req: Request<Syn, Repo, NewResult> = self.repo.send(NewResult {
+            reqs.push_back(self.repo.send(NewResult {
                 test_fqn: r["test_fqn"].as_str().unwrap().to_owned(),
                 status: status,
                 properties: props,
-            });
-            ctx.spawn(req.then(|res| {
-                if let Err(MailboxError::Timeout) = res {
-                    warn!("Repository backpressure; dropping test result");
+            }));
+
+            if reqs.len() > 8 {
+                if let Err(e) = reqs.pop_front().wait() {
+                    error!("Aborting import; Repository returned error: {}", e);
+                    break;
                 }
-                Ok(())
-            }).into_actor(self));
+            }
         }
     }
 }
