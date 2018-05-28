@@ -10,13 +10,14 @@ clap = "*"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
-uuid = { version = "0.5", features = ["v1", "v4"] }
+uuid = { version = "0.5", features = ["v1", "v4", "serde"] }
 lazy_static = "*"
 futures = "0.1"
 actix = "0.5.6"
-actix-web = ">=0.6.4"
+actix-web = "0.6.9"
 log = { version = "0.4", features = ["max_level_info"] }
 indradb-lib = { git = "https://github.com/indradb/indradb" }
+failure = "0.1.1"
 
 [patch.crates-io]
 actix = { path = "../actix" }
