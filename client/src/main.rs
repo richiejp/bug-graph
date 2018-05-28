@@ -19,6 +19,7 @@ extern crate stdweb;
 extern crate serde_derive;
 #[macro_use]
 extern crate yew;
+extern crate uuid;
 
 mod protocol;
 
@@ -27,6 +28,7 @@ use stdweb::web;
 use yew::prelude::*;
 use yew::format::Json;
 use yew::services::websocket::{WebSocketService, WebSocketTask, WebSocketStatus};
+use uuid::Uuid;
 
 use protocol::{Notice, ClientServer, ServerClient};
 
@@ -43,7 +45,7 @@ impl AsMut<WebSocketService> for Context {
 struct Model {
     ws: Option<WebSocketTask>,
     notices: Vec<Notice>,
-    tests: Option<Vec<(String, String)>>,
+    sets: Option<Vec<(String, Uuid)>>,
 }
 
 enum Msg {
@@ -69,7 +71,7 @@ where
         Model {
             ws: Some(task),
             notices: Vec::default(),
-            tests: None,
+            sets: None,
         }
     }
 
@@ -89,14 +91,15 @@ where
             } true },
             Msg::Recv(res) => { match res {
                 Ok(ServerClient::Notify(n)) => self.notices.push(n),
-                Ok(ServerClient::TestList(l)) => self.tests = Some(l),
+                Ok(ServerClient::TestList(l)) => self.sets = Some(l),
                 Err(e) => self.notices.push(
                     Notice::error(format!("Could not parse message from server: {}", e))
                 ),
             } true },
             Msg::Send(m) => {
                 self.ws.as_mut().unwrap().send_binary(Json(&m));
-                false
+                self.notices.push(Notice::info(format!("Requesting set {}", &m)));
+                true
             },
         }
     }
@@ -124,12 +127,12 @@ where
             <div class=("container","is-fluid"),>
               <div class="columns",>
                 <div class=("column","is-narrow"),>
-                  <button class="button", onclick=|_| Msg::Send(ClientServer::TestQuery),>{
-                    "Get tests"
+                  <button class="button", onclick=|_| Msg::Send(ClientServer::SetQuery(None)),>{
+                    "Get sets"
                   }</button>
                 </div>
                <div class=("column", "is-centered"),>{
-                   render_set_list(&self.tests)
+                   self.render_set_list()
                }</div>
               </div>
             </div>
@@ -141,38 +144,47 @@ where
     }
 }
 
-fn render_set_list<C>(list: &Option<Vec<(String, String)>>) -> Html<C, Model>
-where
-    C: AsMut<WebSocketService> + 'static,
-{
-    if let Some(l) = list {
-        html! {
-          <table class=("table","is-hoverable"),>
-            <thead>
-              <tr>
-                <th><abbr title="Test, Product or Set name",>{
-                    "Name"
-                }</abbr></th>
-                <th><abbr title="Vertex UUID",>{
-                    "UUID"
-                }</abbr></th>
-              </tr>
-            </thead>
-            <tbody>{
-                for l.iter().map(|(name, uuid)| { html! {
+impl Model {
+    fn render_set_list<C>(&self) -> Html<C, Model>
+    where
+        C: AsMut<WebSocketService> + 'static,
+    {
+        if let Some(ref l) = self.sets {
+            html! {
+                <table class=("table","is-hoverable"),>
+                    <thead>
                     <tr>
-                        <td>{ name }</td>
-                        <td><a>{ uuid }</a></td>
-                   </tr>
-                } })
-            }</tbody>
-         </table>
-       }
-    } else {
-        html! {
-            <div class=("notification","has-text-grey"),>{
-                "Nothing to see here... yet."
-            }</div>
+                    <th><abbr title="Test, Product or Set name",>{
+                        "Name"
+                    }</abbr></th>
+                    <th><abbr title="Vertex UUID",>{
+                        "UUID"
+                    }</abbr></th>
+                    </tr>
+                    </thead>
+                    <tbody>{
+                        for l.iter().map(|(name, uuid)| {
+                            let uuid2 = *uuid;
+                            html! {
+                                <tr>
+                                    <td>{ name }</td>
+                                    <td>
+                                    <a onclick= move |_| Msg::Send(ClientServer::SetQuery(Some(uuid2))),>{
+                                        uuid
+                                    }</a>
+                                    </td>
+                               </tr>
+                            }
+                        })
+                    }</tbody>
+                    </table>
+            }
+        } else {
+            html! {
+                <div class=("notification","has-text-grey"),>{
+                    "Nothing to see here... yet."
+                }</div>
+            }
         }
     }
 }

@@ -58,9 +58,11 @@ pub struct NewResult {
     pub properties: Vec<String>
 }
 
-#[derive(Message)]
-#[rtype(result = "Vec<(String, Uuid)>")]
-pub struct GetSetVerts;
+pub struct GetSetVerts(pub Option<Uuid>);
+
+impl Message for GetSetVerts {
+    type Result = Vec<(String, Uuid)>;
+}
 
 type VertIndex = HashMap<String, Uuid>;
 

@@ -14,10 +14,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use serde_json;
-use actix::{prelude::*, fut::ok};
+use actix::prelude::*;
+use actix::fut::{ok, err};
 use actix_web::*;
 use actix_web::fs::NamedFile;
 use actix_web::http::Method;
+use failure::Error;
 
 use repo::{Repo, GetSetVerts};
 use protocol::{ClientServer, ServerClient};
@@ -28,6 +30,31 @@ pub struct AppState {
 
 struct Ws {
     repo: Addr<Syn, Repo>,
+}
+
+impl Ws {
+    fn handle_client_msg(&self,
+                         msg: Result<ClientServer, serde_json::Error>,
+                         ctx: &mut <Self as Actor>::Context)
+                         -> Result<(), Error>
+    {
+        match msg? {
+            ClientServer::SetQuery(uuid) => {
+                ctx.spawn(self.repo.send(GetSetVerts(uuid)).into_actor(self)
+                          .from_err::<Error>()
+                          .and_then(|sets, _, ctx| {
+                              match serde_json::to_vec(&ServerClient::TestList(sets)) {
+                                  Ok(json) => ok(ctx.binary(json)),
+                                  Err(e) => err(e.into()),
+                              }
+                          }).then(|res, _, ctx| { if let Err(e) = res {
+                              error!("Could not send set list: {}", e);
+                              ctx.stop();
+                          }  ok(()) }));
+                Ok(())
+            },
+        }
+    }
 }
 
 impl Actor for Ws {
@@ -58,30 +85,9 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for Ws {
                 return;
             }
         };
-        match msg {
-            Ok(m) => match m {
-                ClientServer::TestQuery => {
-                    ctx.spawn(self.repo.send(GetSetVerts).into_actor(self).then(|res, _, ctx| ok(match res {
-                        Ok(mut sets) => {
-                            let sets = sets.drain(..).map(|(name, uuid)| {
-                                (name, uuid.to_string())
-                            }).collect();
-                            ctx.binary(
-                                serde_json::to_vec(&ServerClient::TestList(sets))
-                                    .expect("Serialize test list as JSON")
-                            );
-                        },
-                        Err(e) => {
-                            error!("Repo error: {}", e);
-                            ctx.stop();
-                        },
-                    })));
-                },
-            },
-            Err(e) => {
-                error!("Could not deserialize ClientServer message: {}", e);
-                ctx.stop();
-            }
+        if let Err(e) = self.handle_client_msg(msg, ctx) {
+            error!("Could not handle client websocket request: {}", e);
+            ctx.stop();
         }
     }
 }

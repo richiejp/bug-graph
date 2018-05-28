@@ -28,6 +28,7 @@ extern crate actix;
 extern crate actix_web;
 #[macro_use]
 extern crate log;
+extern crate failure;
 
 mod repo;
 mod imp;

@@ -13,6 +13,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::fmt;
+
+use uuid::Uuid;
+
 #[derive(Serialize, Deserialize)]
 pub enum Flavor {
     Error,
@@ -63,7 +67,7 @@ impl Notice {
 #[derive(Serialize, Deserialize)]
 pub enum ServerClient {
     Notify(Notice),
-    TestList(Vec<(String, String)>),
+    TestList(Vec<(String, Uuid)>),
 }
 
 impl ServerClient {
@@ -78,5 +82,16 @@ impl ServerClient {
 /// Client to Server message
 #[derive(Serialize, Deserialize)]
 pub enum ClientServer {
-    TestQuery,
+    SetQuery(Option<Uuid>),
+}
+
+impl fmt::Display for ClientServer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ClientServer::SetQuery;
+
+        match self {
+            SetQuery(Some(uuid)) => write!(f, "SetQuery({})", uuid),
+            SetQuery(None) => write!(f, "SetQuery(All)"),
+        }
+    }
 }
