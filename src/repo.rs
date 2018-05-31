@@ -15,7 +15,8 @@
 
 use std::convert::Into;
 
-use indradb::{Type, EdgeKey, Datastore, MemoryDatastore, Transaction};
+use indradb::{Type, EdgeKey, VertexQuery, Datastore, MemoryDatastore, Transaction};
+use indradb::Result as IResult;
 use actix::prelude::*;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -64,11 +65,40 @@ impl Message for GetSetVerts {
     type Result = Vec<(String, Uuid)>;
 }
 
-type VertIndex = HashMap<String, Uuid>;
+#[derive(Default)]
+struct VertNameIndex {
+    verts: HashMap<String, Uuid>,
+    names: HashMap<Uuid, String>,
+}
+
+impl VertNameIndex {
+    fn contains_name(&self, name: &str) -> bool {
+        self.verts.contains_key(name)
+    }
+
+    fn insert<S: Into<String>>(&mut self, name: S, vert: Uuid) {
+        let name = name.into();
+
+        self.verts.insert(name.clone(), vert);
+        self.names.insert(vert, name);
+    }
+
+    fn get_all(&self) -> Vec<(String, Uuid)> {
+        self.verts.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+    }
+
+    fn get_name(&self, vert: &Uuid) -> Option<&String> {
+        self.names.get(vert)
+    }
+
+    fn get_vert(&self, name: &str) -> Option<&Uuid> {
+        self.verts.get(name)
+    }
+}
 
 pub struct Repo {
     indradb: MemoryDatastore,
-    id_indx: VertIndex,
+    id_indx: VertNameIndex,
 }
 
 fn new_edge<T: Transaction>(t: &T, egress: &Uuid, etype: &Type, ingress: &Uuid) {
@@ -83,18 +113,18 @@ fn new_vert<T: Transaction>(t: &T, vtype: &Type) -> Uuid {
 
 impl Repo {
 
-    fn intern_name<'a, T>(&'a mut self, t: &T, name_of: &Type, name: &str) -> &'a Uuid
+    fn intern_name<T>(&mut self, t: &T, name_of: &Type, name: &str) -> Uuid
     where
         T: Transaction
     {
-        if !self.id_indx.contains_key(name) {
-            self.id_indx.insert(name.to_owned(), new_vert(t, name_of));
+        if !self.id_indx.contains_name(name) {
+            self.id_indx.insert(name, new_vert(t, name_of));
         }
 
-        self.id_indx.get(name).unwrap()
+        *self.id_indx.get_vert(name).unwrap()
     }
 
-    fn intern_fq_name<'a, T>(&'a mut self, t: &T, name_of: &Type, name: &str) -> &'a Uuid
+    fn intern_fq_name<T>(&mut self, t: &T, name_of: &Type, name: &str) -> Uuid
     where
         T: Transaction
     {
@@ -104,18 +134,28 @@ impl Repo {
             if c == ':' {
                 let category = self.intern_name(t, &SET_VT, &name[0 .. i]);
                 if let Some(ref ocat) = outer_cat {
-                    new_edge(t, category, &ISIN_ET, ocat);
+                    new_edge(t, &category, &ISIN_ET, ocat);
                 }
-                outer_cat = Some(*category);
+                outer_cat = Some(category);
             }
         }
 
         let tvid = self.intern_name(t, name_of, name);
         if let Some(ref ocat) = outer_cat {
-            new_edge(t, tvid, &ISIN_ET, ocat);
+            new_edge(t, &tvid, &ISIN_ET, ocat);
         }
 
         tvid
+    }
+
+    fn get_adjacent<T: Transaction>(&self, t: &T, vert: Uuid) -> IResult<Vec<(String, Uuid)>> {
+        let q = VertexQuery::Vertices { ids: vec![vert] };
+
+        Ok(t.get_vertices(&q.inbound_edges(None, None, None, 1000).outbound_vertices(1000))?
+           .iter()
+           .filter_map(|v| self.id_indx.get_name(&v.id).and_then(|n| Some((n.clone(), v.id))))
+           .collect()
+        )
     }
 }
 
@@ -125,7 +165,7 @@ impl Default for Repo {
 
         Repo {
             indradb: ds,
-            id_indx: HashMap::default(),
+            id_indx: VertNameIndex::default(),
         }
     }
 }
@@ -139,16 +179,15 @@ impl Handler<NewResult> for Repo {
 
     fn handle(&mut self, msg: NewResult, _: &mut Self::Context) -> Self::Result {
         let t = self.indradb.transaction().unwrap();
-        let test = *self.intern_fq_name(&t, &TEST_VT, &msg.test_fqn);
+        let test = self.intern_fq_name(&t, &TEST_VT, &msg.test_fqn);
         let result = new_vert(&t, &TEST_RES_VT);
         new_edge(&t, &test, msg.status.into(), &result);
 
         for name in msg.properties.iter() {
             let prop = self.intern_fq_name(&t, &SET_VT, &name);
-            new_edge(&t, &test, &ISIN_ET, prop);
+            new_edge(&t, &test, &ISIN_ET, &prop);
         }
 
-        //info!("Added test result for {}", &msg.test_fqn);
         MessageResult(result)
     }
 }
@@ -156,9 +195,18 @@ impl Handler<NewResult> for Repo {
 impl Handler<GetSetVerts> for Repo {
     type Result = MessageResult<GetSetVerts>;
 
-    fn handle(&mut self, _msg: GetSetVerts, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: GetSetVerts, _: &mut Self::Context) -> Self::Result {
         MessageResult(
-            self.id_indx.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+            if let Some(vert) = msg.0 {
+                self.indradb.transaction()
+                    .and_then(|t| self.get_adjacent(&t, vert))
+                    .unwrap_or_else(|e| {
+                        error!("Could not get vertices: {}", e);
+                        Vec::default()
+                    })
+            } else {
+                self.id_indx.get_all()
+            }
         )
     }
 }

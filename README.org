@@ -53,7 +53,7 @@
     one or more product revisions.
 *** TODO Several months of LTP results can be stored for multiple products
     Stored and queried.
-** Tasks [1/2]
+** Tasks [2/2]
    Similar to hypotheses, but they can be added and removed without having to
    consider if removing one is a sign of project failure.
 *** DONE Use websockets to send a list of tests and display them in yew
@@ -61,7 +61,7 @@
     list. Now need to:
 **** DONE Serialise list as JSON on server and send it
 **** DONE Deserialise JSON on client and display it
-*** TODO Show a test's adjacent vertices when it is clicked on
+*** DONE Show a test's adjacent vertices when it is clicked on
 * License
   This project and all associated code is licensed under the GPL 3 unless
   otherwise stated within the file.
