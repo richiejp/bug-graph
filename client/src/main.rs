@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![recursion_limit="128"]
+
 extern crate failure;
 extern crate stdweb;
 #[macro_use]
@@ -121,6 +123,16 @@ where
                     "Connecting bugs and test results"
                 }</h2>
               </div>
+            </div>
+            <div class="hero-foot",>
+              <nav class=("tabs","is-boxed"),>
+                <div class="container",>
+                  <ul>
+                    <li class="is-active",><a>{ "Explore" }</a></li>
+                    <li><a>{ "Compare" }</a></li>
+                  </ul>
+                </div>
+              </nav>
             </div>
           </section>
           <section class="section",>
