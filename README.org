@@ -53,7 +53,7 @@
     one or more product revisions.
 *** TODO Several months of LTP results can be stored for multiple products
     Stored and queried.
-** Tasks [2/2]
+** Tasks [2/4]
    Similar to hypotheses, but they can be added and removed without having to
    consider if removing one is a sign of project failure.
 *** DONE Use websockets to send a list of tests and display them in yew
@@ -62,6 +62,13 @@
 **** DONE Serialise list as JSON on server and send it
 **** DONE Deserialise JSON on client and display it
 *** DONE Show a test's adjacent vertices when it is clicked on
+*** TODO Add search component
+    Create a search box and result view which can be used to select a test or
+    set (some vertex) depending on the context/filters.
+*** TODO Create a comparative matrix view of test results
+    Initially just create a table view for comparing the results of a test
+    between product versions and maybe architecture. Allowing the columns to
+    be selected can be left for later or not at all.
 * License
   This project and all associated code is licensed under the GPL 3 unless
   otherwise stated within the file.
