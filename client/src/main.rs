@@ -93,7 +93,7 @@ where
             } true },
             Msg::Recv(res) => { match res {
                 Ok(ServerClient::Notify(n)) => self.notices.push(n),
-                Ok(ServerClient::TestList(l)) => self.sets = Some(l),
+                Ok(ServerClient::SetList(l)) => self.sets = Some(l),
                 Err(e) => self.notices.push(
                     Notice::error(format!("Could not parse message from server: {}", e))
                 ),

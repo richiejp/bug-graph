@@ -18,7 +18,7 @@ use std::convert::Into;
 use indradb::{Type, EdgeKey, VertexQuery, Datastore, MemoryDatastore, Transaction};
 use indradb::Result as IResult;
 use actix::prelude::*;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 macro_rules! itype {
@@ -65,10 +65,14 @@ impl Message for GetSetVerts {
     type Result = Vec<(String, Uuid)>;
 }
 
+#[derive(Message)]
+#[rtype(result = "Vec<(String, Uuid)>")]
+pub struct Search(pub String);
+
 #[derive(Default)]
 struct VertNameIndex {
-    verts: HashMap<String, Uuid>,
-    names: HashMap<Uuid, String>,
+    verts: BTreeMap<String, Uuid>,
+    names: BTreeMap<Uuid, String>,
 }
 
 impl VertNameIndex {
@@ -84,7 +88,7 @@ impl VertNameIndex {
     }
 
     fn get_all(&self) -> Vec<(String, Uuid)> {
-        self.verts.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+        self.verts.iter().map(|(name, uuid)| (name.clone(), *uuid)).collect()
     }
 
     fn get_name(&self, vert: &Uuid) -> Option<&String> {
@@ -93,6 +97,11 @@ impl VertNameIndex {
 
     fn get_vert(&self, name: &str) -> Option<&Uuid> {
         self.verts.get(name)
+    }
+
+    fn search(&self, name: String) -> Vec<(String, Uuid)> {
+        self.verts.range(name..).take(10)
+            .map(|(name, uuid)| (name.clone(), *uuid)).collect()
     }
 }
 
@@ -208,5 +217,13 @@ impl Handler<GetSetVerts> for Repo {
                 self.id_indx.get_all()
             }
         )
+    }
+}
+
+impl Handler<Search> for Repo {
+    type Result = MessageResult<Search>;
+
+    fn handle(&mut self, msg: Search, _: &mut Self::Context) -> Self::Result {
+        MessageResult(self.id_indx.search(msg.0))
     }
 }

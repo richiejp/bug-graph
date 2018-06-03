@@ -67,7 +67,7 @@ impl Notice {
 #[derive(Serialize, Deserialize)]
 pub enum ServerClient {
     Notify(Notice),
-    TestList(Vec<(String, Uuid)>),
+    SetList(Vec<(String, Uuid)>),
 }
 
 impl ServerClient {
@@ -83,15 +83,17 @@ impl ServerClient {
 #[derive(Serialize, Deserialize)]
 pub enum ClientServer {
     SetQuery(Option<Uuid>),
+    Search(String),
 }
 
 impl fmt::Display for ClientServer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ClientServer::SetQuery;
+        use self::ClientServer::*;
 
         match self {
             SetQuery(Some(uuid)) => write!(f, "SetQuery({})", uuid),
             SetQuery(None) => write!(f, "SetQuery(All)"),
+            Search(term) => write!(f, "Search({})", term),
         }
     }
 }

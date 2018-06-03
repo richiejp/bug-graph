@@ -21,7 +21,7 @@ use actix_web::fs::NamedFile;
 use actix_web::http::Method;
 use failure::Error;
 
-use repo::{Repo, GetSetVerts};
+use repo::{Repo, GetSetVerts, Search};
 use protocol::{ClientServer, ServerClient};
 
 pub struct AppState {
@@ -33,6 +33,30 @@ struct Ws {
 }
 
 impl Ws {
+    fn repo_query<Q, F>(&self, query: Q, err_msg: &'static str,
+                        ctx: &mut <Self as Actor>::Context, resp_fn: F)
+    where
+        Q: Message + Send + 'static,
+        Q::Result: Send,
+        Repo: Handler<Q>,
+        F: 'static + FnOnce(Q::Result) -> ServerClient
+    {
+        let fut = self.repo.send(query).into_actor(self).from_err::<Error>();
+
+        ctx.spawn(fut.and_then(|res, _, ctx| {
+            match serde_json::to_vec(&resp_fn(res)) {
+                Ok(json) => ok(ctx.binary(json)),
+                Err(e) => err(e.into()),
+            }
+        }).then(move |res, _, ctx| {
+            if let Err(e) = res {
+                error!("{}: {}", err_msg, e);
+                ctx.stop();
+            }
+            ok(())
+        }));
+    }
+
     fn handle_client_msg(&self,
                          msg: Result<ClientServer, serde_json::Error>,
                          ctx: &mut <Self as Actor>::Context)
@@ -40,20 +64,15 @@ impl Ws {
     {
         match msg? {
             ClientServer::SetQuery(uuid) => {
-                ctx.spawn(self.repo.send(GetSetVerts(uuid)).into_actor(self)
-                          .from_err::<Error>()
-                          .and_then(|sets, _, ctx| {
-                              match serde_json::to_vec(&ServerClient::TestList(sets)) {
-                                  Ok(json) => ok(ctx.binary(json)),
-                                  Err(e) => err(e.into()),
-                              }
-                          }).then(|res, _, ctx| { if let Err(e) = res {
-                              error!("Could not send set list: {}", e);
-                              ctx.stop();
-                          }  ok(()) }));
-                Ok(())
+                let err = "Could not send set list";
+                self.repo_query(GetSetVerts(uuid), err, ctx, |res| ServerClient::SetList(res));
             },
+            ClientServer::Search(term) => {
+                let err = "Search failed";
+                self.repo_query(Search(term), err, ctx, |res| ServerClient::SetList(res));
+            }
         }
+        Ok(())
     }
 }
 
