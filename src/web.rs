@@ -69,7 +69,7 @@ impl Ws {
             },
             ClientServer::Search(term) => {
                 let err = "Search failed";
-                self.repo_query(Search(term), err, ctx, |res| ServerClient::SetList(res));
+                self.repo_query(Search(term), err, ctx, |res| ServerClient::Search(res));
             }
         }
         Ok(())

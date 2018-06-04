@@ -68,6 +68,7 @@ impl Notice {
 pub enum ServerClient {
     Notify(Notice),
     SetList(Vec<(String, Uuid)>),
+    Search(Vec<(String, Uuid)>),
 }
 
 impl ServerClient {
