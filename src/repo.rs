@@ -192,7 +192,7 @@ impl Handler<NewResult> for Repo {
         let result = new_vert(&t, &TEST_RES_VT);
         new_edge(&t, &test, msg.status.into(), &result);
 
-        for name in msg.properties.iter() {
+        for name in &msg.properties {
             let prop = self.intern_fq_name(&t, &SET_VT, &name);
             new_edge(&t, &test, &ISIN_ET, &prop);
         }

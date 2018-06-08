@@ -103,7 +103,7 @@ fn main() {
             .send(StartActor::new(|_| Repo::default()))
             .then(move |repo| match repo {
                 Ok(repo) => {
-                    start_web_server(web_arb, repo.clone(), pargs.web.unwrap().into());
+                    start_web_server(web_arb, repo.clone(), pargs.web.unwrap());
                     imp_arb.send(StartActor::new(move |_| Importer::new(repo)))
                 },
                 Err(e) => panic!("Could not start repository: {}", e),

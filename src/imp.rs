@@ -37,7 +37,7 @@ pub struct Importer {
 impl Importer {
     pub fn new(repo: Addr<Syn, Repo>) -> Importer {
         Importer {
-            repo: repo,
+            repo,
         }
     }
 
@@ -121,7 +121,7 @@ impl Handler<Import> for Importer {
 
             reqs.push_back(self.repo.send(NewResult {
                 test_fqn: r["test_fqn"].as_str().unwrap().to_owned(),
-                status: status,
+                status,
                 properties: props,
             }));
 

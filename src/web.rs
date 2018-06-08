@@ -65,11 +65,11 @@ impl Ws {
         match msg? {
             ClientServer::SetQuery(uuid) => {
                 let err = "Could not send set list";
-                self.repo_query(GetSetVerts(uuid), err, ctx, |res| ServerClient::SetList(res));
+                self.repo_query(GetSetVerts(uuid), err, ctx, ServerClient::SetList);
             },
             ClientServer::Search(term) => {
                 let err = "Search failed";
-                self.repo_query(Search(term), err, ctx, |res| ServerClient::Search(res));
+                self.repo_query(Search(term), err, ctx, ServerClient::Search);
             }
         }
         Ok(())
@@ -117,7 +117,7 @@ fn index(_req: HttpRequest<AppState>) -> Result<NamedFile> {
 
 fn ws_index(req: HttpRequest<AppState>) -> Result<HttpResponse> {
     let repo = req.state().repo.clone();
-    ws::start(req, Ws { repo: repo })
+    ws::start(req, Ws { repo })
 }
 
 fn static_file(file: Path<String>) -> Result<NamedFile> {
@@ -126,7 +126,7 @@ fn static_file(file: Path<String>) -> Result<NamedFile> {
 
 pub fn new(repo: Addr<Syn, Repo>) -> App<AppState>
 {
-    App::with_state(AppState{ repo: repo })
+    App::with_state(AppState{ repo })
         .resource("/", |r| r.method(Method::GET).f(index))
         .resource("/ws/", |r| r.f(ws_index))
         // For now non capture groups (?: ...) confuse the actix-web parser
