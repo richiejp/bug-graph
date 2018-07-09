@@ -30,21 +30,19 @@ pub struct Search {
     completions: Vec<(String, Uuid)>,
 }
 
-impl<C> Component<C> for Search
-where
-    C: 'static,
+impl Component for Search
 {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(_: Self::Properties, _: &mut Env<C, Self>) -> Self {
+    fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
         Search {
             term: String::default(),
             completions: Vec::default(),
         }
     }
 
-    fn update(&mut self, msg: Self::Message, _: &mut Env<C, Self>) -> ShouldRender {
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::Term(s) => if s != self.term {
                 self.term = s;
@@ -56,13 +54,13 @@ where
     }
 }
 
-impl<C: 'static> Renderable<C, Search> for Search {
-    fn view(&self) -> Html<C, Self> {
+impl Renderable<Search> for Search {
+    fn view(&self) -> Html<Self> {
         html! {
             <input
                 class=("input","is-rounded"), type="text", placeholder="Search term",
                 value=&self.term,
-                oninput=|e: InputData| Msg::Term(e.value),
+                oninput=|e| Msg::Term(e.value),
             />
         }
     }

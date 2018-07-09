@@ -18,7 +18,3 @@ actix-web = "0.6.9"
 log = { version = "0.4", features = ["max_level_info"] }
 indradb-lib = { git = "https://github.com/indradb/indradb" }
 failure = "0.1.1"
-
-[patch.crates-io]
-actix = { path = "../actix" }
-actix-web = { path = "../actix-web" }

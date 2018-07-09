@@ -26,6 +26,8 @@ extern crate uuid;
 mod protocol;
 mod search;
 
+use std::fmt;
+
 use failure::Error;
 use stdweb::web;
 use yew::prelude::*;
@@ -36,23 +38,26 @@ use uuid::Uuid;
 use protocol::{Notice, ClientServer, ServerClient};
 use search::Search;
 
-struct Context {
-    ws: WebSocketService,
-}
-
-impl AsMut<WebSocketService> for Context {
-    fn as_mut(&mut self) -> &mut WebSocketService {
-        &mut self.ws
-    }
-}
-
 #[derive(Clone,Copy,PartialEq,Eq)]
 enum AppTab {
     Explore,
     Compare,
 }
 
+impl fmt::Display for AppTab {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use AppTab::*;
+
+        match self {
+            Explore => write!(f, "Explore"),
+            Compare => write!(f, "Compare"),
+        }
+    }
+}
+
 struct Model {
+    link: ComponentLink<Model>,
+    wss: WebSocketService,
     ws: Option<WebSocketTask>,
     notices: Vec<Notice>,
     sets: Option<Vec<(String, Uuid)>>,
@@ -67,29 +72,29 @@ enum Msg {
     ToTab(AppTab),
 }
 
-impl<C> Component<C> for Model
-where
-    C: AsMut<WebSocketService> + 'static,
+impl Component for Model
 {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_: Self::Properties, env: &mut Env<C, Self>) -> Self {
+    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         let url = ws_url();
-        let cb = env.send_back(|Json(msg)| Msg::Recv(msg));
-        let evt = env.send_back(|status| Msg::Stat(status));
-        let wss: &mut WebSocketService = env.as_mut();
-        let task = wss.connect(&url, cb, evt);
+        let cb = link.send_back(|Json(msg)| Msg::Recv(msg));
+        let evt = link.send_back(|status| Msg::Stat(status));
+        let mut wss = WebSocketService::new();
+        let ws = wss.connect(&url, cb, evt);
 
         Model {
-            ws: Some(task),
+            link,
+            wss,
+            ws: Some(ws),
             notices: Vec::default(),
             sets: None,
             tab: AppTab::Explore,
         }
     }
 
-    fn update(&mut self, msg: Self::Message, _env: &mut Env<C, Self>) -> ShouldRender {
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::Stat(s) => { match s {
                 WebSocketStatus::Opened => {
@@ -122,11 +127,9 @@ where
     }
 }
 
-impl<C> Renderable<C, Model> for Model
-where
-    C: AsMut<WebSocketService> + 'static,
+impl Renderable<Model> for Model
 {
-    fn view(&self) -> Html<C, Self> {
+    fn view(&self) -> Html<Self> {
         html! {<>
           <section class=("hero","is-primary","is-bold"),>
             <div class="hero-body",>
@@ -175,35 +178,32 @@ where
 
 impl Model {
 
-    fn render_matrix<C: AsMut<WebSocketService> + 'static>(&self) -> Html<C, Model> {
+    fn render_matrix(&self) -> Html<Model> {
         html! {
             <Search: />
         }
     }
 
-    fn render_tabs<C>(&self) -> impl Iterator<Item=Html<C, Model>>
-    where
-        C: AsMut<WebSocketService> + 'static
+    fn render_tabs(&self) -> impl Iterator<Item=Html<Model>>
     {
         use AppTab::*;
 
         let cur = self.tab;
 
-        (&[("Explore", Explore), ("Compare", Compare)]).iter().map(move |(text, val)| {
-            let val = *val;
-            if cur == val {
+        (&[Explore, Compare]).iter().map(move |tab| {
+            if cur == *tab {
                 html! {
-                    <li class="is-active",><a>{ text }</a></li>
+                    <li class="is-active",><a>{ *tab }</a></li>
                 }
             } else {
                 html! {
-                    <li><a onclick= move |_| Msg::ToTab(val),>{ text }</a></li>
+                    <li><a onclick=|_| Msg::ToTab(*tab),>{ *tab }</a></li>
                 }
             }
         })
     }
 
-    fn render_set_list<C: AsMut<WebSocketService> + 'static>(&self) -> Html<C, Model>
+    fn render_set_list(&self) -> Html<Model>
     {
         if let Some(ref l) = self.sets {
             html! {
@@ -220,12 +220,12 @@ impl Model {
                     </thead>
                     <tbody>{
                         for l.iter().map(|(name, uuid)| {
-                            let uuid2 = *uuid;
+                            let uuid = *uuid;
                             html! {
                                 <tr>
                                     <td>{ name }</td>
                                     <td>
-                                    <a onclick= move |_| Msg::Send(ClientServer::SetQuery(Some(uuid2))),>{
+                                    <a onclick=|_| Msg::Send(ClientServer::SetQuery(Some(uuid))),>{
                                         uuid
                                     }</a>
                                     </td>
@@ -245,13 +245,11 @@ impl Model {
     }
 }
 
-fn render_notice<C>(i: usize, notice: &Notice) -> Html<C, Model>
-where
-    C: AsMut<WebSocketService> + 'static,
+fn render_notice(i: usize, notice: &Notice) -> Html<Model>
 {
     html! {
         <div class=("notification", notice.css_class()),>
-            <button class="delete", onclick= move |_| Msg::DelNotice(i),/>
+            <button class="delete", onclick=|_| Msg::DelNotice(i),/>
             { &notice.msg }
         </div>
     }
@@ -272,9 +270,7 @@ fn ws_url() -> String {
 fn main() {
     yew::initialize();
 
-    let app: App<_, Model> = App::new(Context {
-        ws: WebSocketService::new(),
-    });
+    let app = App::<Model>::new();
 
     app.mount_to_body();
     yew::run_loop();
