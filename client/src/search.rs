@@ -13,6 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use yew::prelude::*;
 use uuid::Uuid;
 
@@ -22,12 +25,17 @@ pub enum Msg {
 
 #[derive(PartialEq, Clone, Default)]
 pub struct Props {
-
+    pub term: Rc<RefCell<String>>,
+    pub completions: Option<Vec<(String, Uuid)>>,
+    pub onneed_more: Option<Callback<String>>,
 }
 
 pub struct Search {
-    term: String,
+    link: ComponentLink<Search>,
+    term: Rc<RefCell<String>>,
     completions: Vec<(String, Uuid)>,
+    matches: Vec<usize>,
+    onneed_more: Option<Callback<String>>,
 }
 
 impl Component for Search
@@ -35,17 +43,20 @@ impl Component for Search
     type Message = Msg;
     type Properties = Props;
 
-    fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
+    fn create(p: Self::Properties, link: ComponentLink<Self>) -> Self {
         Search {
-            term: String::default(),
-            completions: Vec::default(),
+            link,
+            term: p.term,
+            completions: p.completions.unwrap_or_default(),
+            matches: Vec::default(),
+            onneed_more: p.onneed_more,
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::Term(s) => if s != self.term {
-                self.term = s;
+            Msg::Term(s) => if s != *self.term.borrow() {
+                self.term.replace(s);
                 true
             } else {
                 false
@@ -59,7 +70,7 @@ impl Renderable<Search> for Search {
         html! {
             <input
                 class=("input","is-rounded"), type="text", placeholder="Search term",
-                value=&self.term,
+                value=self.term.borrow(),
                 oninput=|e| Msg::Term(e.value),
             />
         }

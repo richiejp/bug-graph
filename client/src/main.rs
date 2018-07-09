@@ -27,6 +27,8 @@ mod protocol;
 mod search;
 
 use std::fmt;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use failure::Error;
 use stdweb::web;
@@ -62,6 +64,7 @@ struct Model {
     notices: Vec<Notice>,
     sets: Option<Vec<(String, Uuid)>>,
     tab: AppTab,
+    cmp_term: Rc<RefCell<String>>,
 }
 
 enum Msg {
@@ -91,6 +94,7 @@ impl Component for Model
             notices: Vec::default(),
             sets: None,
             tab: AppTab::Explore,
+            cmp_term: Rc::new(RefCell::new("".to_string())),
         }
     }
 
@@ -180,7 +184,7 @@ impl Model {
 
     fn render_matrix(&self) -> Html<Model> {
         html! {
-            <Search: />
+            <Search: term=Rc::clone(&self.cmp_term),/>
         }
     }
 
