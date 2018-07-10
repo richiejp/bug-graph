@@ -65,6 +65,7 @@ struct Model {
     sets: Option<Vec<(String, Uuid)>>,
     tab: AppTab,
     cmp_term: Rc<RefCell<String>>,
+    cmp_completions: Rc<Vec<(String, Uuid)>>,
 }
 
 enum Msg {
@@ -95,6 +96,7 @@ impl Component for Model
             sets: None,
             tab: AppTab::Explore,
             cmp_term: Rc::new(RefCell::new("".to_string())),
+            cmp_completions: Rc::new(Vec::default()),
         }
     }
 
@@ -112,14 +114,22 @@ impl Component for Model
                     self.notices.push(Notice::error("Error on websocket"));
                 },
             } true },
-            Msg::Recv(res) => { match res {
-                Ok(ServerClient::Notify(n)) => self.notices.push(n),
-                Ok(ServerClient::SetList(l)) => self.sets = Some(l),
-                Ok(ServerClient::Search(s)) => panic!("Not implemented"),
-                Err(e) => self.notices.push(
-                    Notice::error(format!("Could not parse message from server: {}", e))
-                ),
-            } true },
+            Msg::Recv(res) => match res {
+                Ok(ServerClient::Notify(n)) => { self.notices.push(n); true },
+                Ok(ServerClient::SetList(l)) => { self.sets = Some(l); true },
+                Ok(ServerClient::Search(t, r)) => if t == *self.cmp_term.borrow() {
+                    self.cmp_completions = Rc::new(r);
+                    true
+                } else {
+                    false
+                },
+                Err(e) => {
+                    self.notices.push(
+                        Notice::error(format!("Could not parse message from server: {}", e))
+                    );
+                    true
+                },
+            },
             Msg::Send(m) => {
                 self.ws.as_mut().unwrap().send_binary(Json(&m));
                 self.notices.push(Notice::info(format!("Requesting set {}", &m)));
@@ -184,7 +194,9 @@ impl Model {
 
     fn render_matrix(&self) -> Html<Model> {
         html! {
-            <Search: term=Rc::clone(&self.cmp_term),/>
+            <Search: term=Rc::clone(&self.cmp_term),
+                     completions=Some(Rc::clone(&self.cmp_completions)),
+                     onneed_more=|t| Msg::Send(ClientServer::Search(t)),/>
         }
     }
 

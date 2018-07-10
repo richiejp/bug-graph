@@ -69,7 +69,10 @@ impl Ws {
             },
             ClientServer::Search(term) => {
                 let err = "Search failed";
-                self.repo_query(Search(term), err, ctx, ServerClient::Search);
+                let term2 = term.clone();
+                self.repo_query(Search(term), err, ctx, move |res| {
+                    ServerClient::Search(term2, res)
+                });
             }
         }
         Ok(())
