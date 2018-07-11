@@ -73,7 +73,11 @@ impl Ws {
                 self.repo_query(Search(term), err, ctx, move |res| {
                     ServerClient::Search(term2, res)
                 });
-            }
+            },
+            ClientServer::ResultMatrix(uuid) => {
+                let err = "Failed to create result matrix";
+                //query
+            },
         }
         Ok(())
     }

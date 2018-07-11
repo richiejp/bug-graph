@@ -14,12 +14,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::convert::Into;
+use std::collections::{BTreeMap, HashMap};
 
-use indradb::{Type, EdgeKey, VertexQuery, Datastore, MemoryDatastore, Transaction};
+use indradb::{Vertex, Type, EdgeKey, VertexQuery, Datastore, MemoryDatastore, Transaction};
 use indradb::Result as IResult;
 use actix::prelude::*;
-use std::collections::BTreeMap;
 use uuid::Uuid;
+
+use protocol::{VertInfo, ResultMatrix, ResultInMatrix};
 
 macro_rules! itype {
     ($vert_name:ident) => (
@@ -68,6 +70,10 @@ impl Message for GetSetVerts {
 #[derive(Message)]
 #[rtype(result = "Vec<(String, Uuid)>")]
 pub struct Search(pub String);
+
+#[derive(Message)]
+#[rtype(ResultMatrix)]
+pub struct GetResultMatrix(pub Uuid);
 
 #[derive(Default)]
 struct VertNameIndex {
@@ -166,6 +172,78 @@ impl Repo {
            .collect()
         )
     }
+
+    fn get_test_results<T: Transaction>(&self, t: &T, test: Uuid)
+                                        -> IResult<Vec<(VertInfo, bool)>> {
+        let q = VertexQuery::Vertices { ids: vec![test] };
+
+        let passed = t.get_vertices(&q.outbound_edges(Some(PASS_ET.clone()), None, None, 500)
+                                    .inbound_vertices(500))?;
+        let res = passed.iter()
+            .filter_map(|v| {
+                self.id_indx.get_name(&v.id).and_then(|n| {
+                    Some((VertInfo(n.clone(), v.id), true))
+                })
+            });
+
+        let q = VertexQuery::Vertices { ids: vec![test] };
+        Ok(res.chain(t.get_vertices(&q.outbound_edges(Some(FAIL_ET.clone()), None, None, 500)
+                                 .inbound_vertices(500))?
+            .iter()
+            .filter_map(|v| {
+                self.id_indx.get_name(&v.id).and_then(|n| {
+                    Some((VertInfo(n.clone(), v.id), false))
+                })
+            })).collect())
+    }
+
+    fn get_test_result_props<T: Transaction>(&self, t: &T, test_result: Uuid)
+                                               -> IResult<Vec<VertInfo>> {
+        let q = (VertexQuery::Vertices { ids: vec![test_result] })
+            .outbound_edges(Some(ISIN_ET.clone()), None, None, 1000)
+            .inbound_vertices(1000);
+        Ok(t.get_vertices(&q)?
+           .iter()
+           .filter_map(|v| {
+               self.id_indx.get_name(&v.id).and_then(|n| Some(VertInfo(n.clone(), v.id)))
+           })
+           .collect()
+        )
+    }
+
+    fn get_outer_sets<T: Transaction>(&self, t: &T, ids: Vec<Uuid>) -> IResult<Vec<Vertex>> {
+        let q = VertexQuery::Vertices { ids };
+        t.get_vertices(&q.inbound_edges(Some(ISIN_ET.clone()), None, None, 100)
+                       .outbound_vertices(100))
+    }
+
+    fn get_inner_tests<T: Transaction>(&self, t: &T, sets_or_tests: Vec<Uuid>)
+                                       -> IResult<Vec<VertInfo>> {
+        let q = VertexQuery::Vertices { ids: sets_or_tests };
+        let mut depth = 0;
+        let mut res: Vec<VertInfo> = Vec::new();
+        let mut verts = t.get_vertices(&q)?;
+
+        while res.len() < 100 && verts.len() > 0 && depth < 10 {
+            {
+                let tests = verts.iter()
+                    .filter(|v| &v.t == &*TEST_VT)
+                    .map(|v| {
+                        VertInfo(self.id_indx.get_name(&v.id).unwrap_or(&String::new()).clone(),
+                                 v.id)
+                    });
+                res.extend(tests);
+            }
+
+            let ids = verts.iter().filter(|v| &v.t == &*SET_VT).map(|sv| sv.id).collect();
+            verts = self.get_outer_sets(t, ids)?;
+
+            depth += 1;
+        }
+
+        Ok(res)
+    }
+
 }
 
 impl Default for Repo {
@@ -194,7 +272,7 @@ impl Handler<NewResult> for Repo {
 
         for name in &msg.properties {
             let prop = self.intern_fq_name(&t, &SET_VT, &name);
-            new_edge(&t, &test, &ISIN_ET, &prop);
+            new_edge(&t, &result, &ISIN_ET, &prop);
         }
 
         MessageResult(result)
@@ -225,5 +303,62 @@ impl Handler<Search> for Repo {
 
     fn handle(&mut self, msg: Search, _: &mut Self::Context) -> Self::Result {
         MessageResult(self.id_indx.search(msg.0))
+    }
+}
+
+impl Handler<GetResultMatrix> for Repo {
+    type Result = MessageResult<GetResultMatrix>;
+
+    fn handle(&mut self, msg: GetResultMatrix, _ctx: &mut Self::Context) -> Self::Result {
+        let t = self.indradb.transaction().unwrap();
+        
+        let tests = self.get_inner_tests(&t, vec![msg.0]).unwrap_or_else(|e| {
+            error!("Failed to get inner tests: {}", e);
+            Vec::default()
+        });
+
+        // Results by build/product/test property
+        let mut results = HashMap::<Uuid, (VertInfo, Vec<ResultInMatrix>)>::new();
+
+        for (i, VertInfo(_, test)) in tests.iter().enumerate() {
+            let results2 = self.get_test_results(&t, *test).unwrap_or_else(|e| {
+                error!("Failed test results: {}", e);
+                Vec::default()
+            });
+            let mut results3 = HashMap::<Uuid, (VertInfo, u32, u32)>::new();
+
+            for (result2, status) in &results2 {
+                let props = self.get_test_result_props(&t, result2.1).unwrap_or_else(|e| {
+                    error!("Failed to get test result properties/sets: {}", e);
+                    Vec::default()
+                });
+
+                for prop in &props {
+                    let result3 = results3.entry(prop.1).or_insert((prop.clone(), 0, 0));
+                    if *status {
+                        result3.1 += 1;
+                    } else {
+                        result3.2 += 1;
+                    }
+                }
+            }
+
+            for (prop, (vinfo, passes, fails)) in results3.into_iter() {
+                let result = results.entry(prop).or_insert_with(|| {
+                    (vinfo, Vec::new())
+                });
+
+                result.1.push(ResultInMatrix {
+                    test_case: i as u32,
+                    passes,
+                    fails,
+                });
+            }
+        }
+        
+        MessageResult(ResultMatrix {
+            test_cases: tests,
+            results: results.into_iter().map(|(_, v)| (v.0, v.1)).collect(),
+        })
     }
 }

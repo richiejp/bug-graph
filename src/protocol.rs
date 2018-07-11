@@ -63,6 +63,22 @@ impl Notice {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct VertInfo(pub String, pub Uuid);
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ResultInMatrix {
+    pub test_case: u32,
+    pub passes: u32,
+    pub fails: u32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ResultMatrix {
+    pub test_cases: Vec<VertInfo>,
+    pub results: Vec<(VertInfo, Vec<ResultInMatrix>)>,
+}
+
 /// Server to Client message
 #[derive(Serialize, Deserialize)]
 pub enum ServerClient {
@@ -85,6 +101,7 @@ impl ServerClient {
 pub enum ClientServer {
     SetQuery(Option<Uuid>),
     Search(String),
+    ResultMatrix(Uuid),
 }
 
 impl fmt::Display for ClientServer {
@@ -95,6 +112,7 @@ impl fmt::Display for ClientServer {
             SetQuery(Some(uuid)) => write!(f, "SetQuery({})", uuid),
             SetQuery(None) => write!(f, "SetQuery(All)"),
             Search(term) => write!(f, "Search({})", term),
+            ResultMatrix(uuid) => write!(f, "ResultMatrix({})", uuid),
         }
     }
 }
