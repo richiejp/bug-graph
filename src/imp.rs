@@ -16,7 +16,7 @@
 use std::collections::VecDeque;
 use std::fs::{self, File};
 use std::ffi::OsString;
-use std::io::prelude::*;
+use std::io::{self, prelude::*};
 use std::path::Path;
 
 use actix::dev::*;
@@ -41,29 +41,38 @@ impl Importer {
         }
     }
 
-    fn read_file<P: AsRef<Path>>(path: P) -> String {
-        let mut file = File::open(path).unwrap();
+    fn read_file<P: AsRef<Path>>(path: P) -> io::Result<String> {
+        let mut file = File::open(path)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
+        file.read_to_string(&mut contents)?;
 
-        contents
+        Ok(contents)
     }
 
-    fn read_files(dir: String, ext: String) -> impl Iterator<Item = String> {
+    fn read_files(dir: &str, ext: String) -> io::Result<impl Iterator<Item = String>> {
         let ext = OsString::from(ext);
-        fs::read_dir(dir).unwrap().filter_map(|ent| {
-            ent.ok()
-        }).filter(|ent| {
-            ent.file_type().map(|e| e.is_file()).unwrap_or(false)
-        }).filter_map(move |ent| {
-            let fp = ent.path();
-            if fp.extension().map_or(false, |e| e == ext) {
-                info!("Reading file: {}", fp.display());
-                Some(Importer::read_file(fp))
-            } else {
-                info!("Ignoring file: {}", fp.display());
-                None
-            }
+
+        fs::read_dir(dir).and_then(|ents| {
+            Ok(ents.filter_map(|ent| {
+                ent.ok()
+            }).filter(|ent| {
+                ent.file_type().map(|e| e.is_file()).unwrap_or(false)
+            }).filter_map(move |ent| {
+                let fp = ent.path();
+                if fp.extension().map_or(false, |e| e == ext) {
+                    info!("Reading file: {}", fp.display());
+                    match Importer::read_file(&fp) {
+                        Ok(content) => Some(content),
+                        Err(e) => {
+                            error!("Failed to read {}: {}", fp.display(), e);
+                            None
+                        },
+                    }
+                } else {
+                    info!("Ignoring file: {}", fp.display());
+                    None
+                }
+            }))
         })
     }
 }
@@ -78,8 +87,15 @@ impl Handler<ScanDir> for Importer {
     fn handle(&mut self, msg: ScanDir, ctx: &mut Self::Context) {
         info!("Scanning directory: {}", &msg.dir);
 
-        for json in Importer::read_files(msg.dir, msg.ext) {
-            ctx.notify(Import(json));
+        match Importer::read_files(&msg.dir, msg.ext) {
+            Ok(files) => {
+                for json in files {
+                    ctx.notify(Import(json));
+                }
+            },
+            Err(e) => {
+                error!("Failed to read dir {}: {}", &msg.dir, e);
+            }
         }
     }
 }
