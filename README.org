@@ -13,11 +13,14 @@
   need `cargo-web`, Rust nightly and `wasm32-unknown-unknown`. Also see the
   Cargo.toml, you will need to clone some repos and maybe override the patch
   section.
+** Build & Run
+   Just do `cargo run -- res` from the project root. Also
+   `cargo run -- --help` will display the command line options.
 * Project organisation
 ** Current state
    Presently the entire project is in a prototype phase where the objective is
    to build an end-to-end solution as fast as possible which tests the
-   following hypotheses.
+   hypotheses in the section below.
 
    If the hypotheses are proven correct then it will enter a cleanup and
    refactoring phase where the only goal will be long term
@@ -42,9 +45,15 @@
      can get to Erlang. It is probably best to avoid panics unlike in
      Erlang. However I am satisfied that it can be done to a reasonable level.
 *** DONE Can display a comparative matrix view of test results
+**** Hypothese
     It should be reasonably easy to query a graph database to produce a table
     view of test results for one or more tests. The main reason being to
     compare the results of a test in different environments.
+**** Result
+     Adding filters and fine tuning the results may not be trivial, but it
+     seems querying the graph to produce such a table is OK. The current
+     implementation may not be particularly useful because of problems with
+     the UI, but the concept appears to be good. 
 *** TODO Can be used to identify which bug causes a test failure
     Bug-graph simply needs to suggest the correct bugs for the test results
     most of the time if the user previously identified a connection. The user
@@ -54,7 +63,7 @@
     one or more product revisions.
 *** TODO Several months of LTP results can be stored for multiple products
     Stored and queried.
-** Tasks [2/4]
+** Tasks [4/8]
    Similar to hypotheses, but they can be added and removed without having to
    consider if removing one is a sign of project failure.
 *** DONE Use websockets to send a list of tests and display them in yew
@@ -63,13 +72,17 @@
 **** DONE Serialise list as JSON on server and send it
 **** DONE Deserialise JSON on client and display it
 *** DONE Show a test's adjacent vertices when it is clicked on
-*** TODO Add search component
+*** DONE Add search component
     Create a search box and result view which can be used to select a test or
     set (some vertex) depending on the context/filters.
-*** TODO Create a comparative matrix view of test results
+*** DONE Create a comparative matrix view of test results
     Initially just create a table view for comparing the results of a test
     between product versions and maybe architecture. Allowing the columns to
     be selected can be left for later or not at all.
+*** TODO Find out why some tests are not being imported from the JSON files
+*** TODO Import tests from OpenQA using the Web API
+*** TODO Import bug tags from OpenQA comments
+*** TODO Suggest new tags based on old ones
 * License
   This project and all associated code is licensed under the GPL 3 unless
   otherwise stated within the file.
