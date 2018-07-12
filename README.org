@@ -1,3 +1,4 @@
+/Note that this README is not displayed correctly on GitHub./
 * Synopsis
   This is an experimental project to analyse test results and automatically
   connect them with existing bug reports.
@@ -22,7 +23,7 @@
    refactoring phase where the only goal will be long term
    maintainability. After which new modules will be added with there own
    phases or some other approach will be taken.
-** Hypotheses [2/7]
+** Hypotheses [3/6]
    These hypotheses are for the current system design, which is an Indradb
    graph database (and simple key-value map for indexing or whatever) and some
    Rust web framework. The database can be in-memory or with rocksdb if
@@ -40,7 +41,7 @@
      makes sense to do this or where to do it. So I am not sure how close one
      can get to Erlang. It is probably best to avoid panics unlike in
      Erlang. However I am satisfied that it can be done to a reasonable level.
-*** TODO Can display a comparative matrix view of test results
+*** DONE Can display a comparative matrix view of test results
     It should be reasonably easy to query a graph database to produce a table
     view of test results for one or more tests. The main reason being to
     compare the results of a test in different environments.
