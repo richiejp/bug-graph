@@ -174,27 +174,18 @@ impl Repo {
     }
 
     fn get_test_results<T: Transaction>(&self, t: &T, test: Uuid)
-                                        -> IResult<Vec<(VertInfo, bool)>> {
+                                        -> IResult<Vec<(Uuid, bool)>> {
         let q = VertexQuery::Vertices { ids: vec![test] };
 
         let passed = t.get_vertices(&q.outbound_edges(Some(PASS_ET.clone()), None, None, 500)
                                     .inbound_vertices(500))?;
-        let res = passed.iter()
-            .filter_map(|v| {
-                self.id_indx.get_name(&v.id).and_then(|n| {
-                    Some((VertInfo(n.clone(), v.id), true))
-                })
-            });
+        let res = passed.into_iter().map(|v| (v.id, true));
 
         let q = VertexQuery::Vertices { ids: vec![test] };
         Ok(res.chain(t.get_vertices(&q.outbound_edges(Some(FAIL_ET.clone()), None, None, 500)
                                  .inbound_vertices(500))?
-            .iter()
-            .filter_map(|v| {
-                self.id_indx.get_name(&v.id).and_then(|n| {
-                    Some((VertInfo(n.clone(), v.id), false))
-                })
-            })).collect())
+                     .into_iter()
+                     .map(|v| (v.id, false))).collect())
     }
 
     fn get_test_result_props<T: Transaction>(&self, t: &T, test_result: Uuid)
@@ -207,8 +198,7 @@ impl Repo {
            .filter_map(|v| {
                self.id_indx.get_name(&v.id).and_then(|n| Some(VertInfo(n.clone(), v.id)))
            })
-           .collect()
-        )
+           .collect())
     }
 
     fn get_outer_sets<T: Transaction>(&self, t: &T, ids: Vec<Uuid>) -> IResult<Vec<Vertex>> {
@@ -317,25 +307,38 @@ impl Handler<GetResultMatrix> for Repo {
             Vec::default()
         });
 
-        // Results by build/product/test property
+        if tests.len() < 1 {
+            debug!("No inner tests returned for {}", msg.0);
+        }
+
+        // Results keyed by build/product/test property
         let mut results = HashMap::<Uuid, (VertInfo, Vec<ResultInMatrix>)>::new();
 
-        for (i, VertInfo(_, test)) in tests.iter().enumerate() {
+        for (i, VertInfo(test_name, test)) in tests.iter().enumerate() {
             let results2 = self.get_test_results(&t, *test).unwrap_or_else(|e| {
                 error!("Failed test results: {}", e);
                 Vec::default()
             });
-            let mut results3 = HashMap::<Uuid, (VertInfo, u32, u32)>::new();
 
-            for (result2, status) in &results2 {
-                let props = self.get_test_result_props(&t, result2.1).unwrap_or_else(|e| {
+            if results2.len() < 1 {
+                debug!("No test-results found for {} ({})", test_name, test);
+            }
+
+            let mut results3 = HashMap::<Uuid, (VertInfo, u32, u32)>::new();
+            for (result2, status) in results2.into_iter() {
+                let props = self.get_test_result_props(&t, result2).unwrap_or_else(|e| {
                     error!("Failed to get test result properties/sets: {}", e);
                     Vec::default()
                 });
 
-                for prop in &props {
-                    let result3 = results3.entry(prop.1).or_insert((prop.clone(), 0, 0));
-                    if *status {
+                if props.len() < 1 {
+                    debug!("No test-properties found for {}'s test-result: {}",
+                           test_name, result2);
+                }
+
+                for prop in props.into_iter() {
+                    let result3 = results3.entry(prop.1).or_insert((prop, 0, 0));
+                    if status {
                         result3.1 += 1;
                     } else {
                         result3.2 += 1;

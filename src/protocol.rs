@@ -85,6 +85,7 @@ pub enum ServerClient {
     Notify(Notice),
     SetList(Vec<(String, Uuid)>),
     Search(String, Vec<(String, Uuid)>),
+    ResultMatrix(Uuid, ResultMatrix),
 }
 
 impl ServerClient {

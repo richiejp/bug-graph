@@ -33,11 +33,12 @@ use std::rc::Rc;
 use failure::Error;
 use stdweb::web;
 use yew::prelude::*;
+use yew::virtual_dom::{VNode, VList};
 use yew::format::Json;
 use yew::services::websocket::{WebSocketService, WebSocketTask, WebSocketStatus};
 use uuid::Uuid;
 
-use protocol::{Notice, ClientServer, ServerClient};
+use protocol::{Notice, ClientServer, ServerClient, ResultMatrix, ResultInMatrix};
 use search::Search;
 
 #[derive(Clone,Copy,PartialEq,Eq)]
@@ -66,6 +67,8 @@ struct Model {
     tab: AppTab,
     cmp_term: Rc<RefCell<String>>,
     cmp_completions: Rc<Vec<(String, Uuid)>>,
+    cmp_matrix: Option<ResultMatrix>,
+    cmp_selected: Uuid,
 }
 
 enum Msg {
@@ -97,6 +100,8 @@ impl Component for Model
             tab: AppTab::Explore,
             cmp_term: Rc::new(RefCell::new("".to_string())),
             cmp_completions: Rc::new(Vec::default()),
+            cmp_selected: Uuid::default(),
+            cmp_matrix: None,
         }
     }
 
@@ -123,6 +128,12 @@ impl Component for Model
                 } else {
                     false
                 },
+                Ok(ServerClient::ResultMatrix(uuid, m)) => if uuid == self.cmp_selected {
+                    self.cmp_matrix = Some(m);
+                    true
+                } else {
+                    false
+                },
                 Err(e) => {
                     self.notices.push(
                         Notice::error(format!("Could not parse message from server: {}", e))
@@ -131,6 +142,9 @@ impl Component for Model
                 },
             },
             Msg::Send(m) => {
+                if let ClientServer::ResultMatrix(t) = m {
+                    self.cmp_selected = t;
+                }
                 self.ws.as_mut().unwrap().send_binary(Json(&m));
                 self.notices.push(Notice::info(format!("Requesting set {}", &m)));
                 true
@@ -192,11 +206,90 @@ impl Renderable<Model> for Model
 
 impl Model {
 
+    fn render_matrix_cells(&self, results: &[ResultInMatrix], test_count: usize) -> Html<Model> {
+        let mut html = VList::new();
+        let mut i = 0;
+
+        for result in results {
+            let td = if result.test_case == i {
+                let score = format!("{}/{}", result.passes, result.fails);
+                if result.fails == 0 {
+                    html! {
+                        <td class="has-background-success",>{ score }</td>
+                    }
+                } else if result.passes >= result.fails {
+                    html! {
+                        <td class="has-background-warning",>{ score }</td>
+                    }
+                } else {
+                    html! {
+                        <td class="has-background-danger",>{ score }</td>
+                    }
+                }
+            } else if result.test_case > i {
+                html! {
+                    <td>{ "_" }</td>
+                }
+            } else {
+                panic!("Test results are out-of-order?");
+            };
+
+            i += 1;
+            html.add_child(td);
+        }
+
+        for _j in i..(test_count as u32) {
+            html.add_child(html! { <td>{ "_" }</td> });
+        }
+
+        VNode::from(html)
+    }
+    
+    fn render_matrix_rows(&self, matrix: &ResultMatrix) -> Html<Model> {
+        let test_count = matrix.test_cases.len();
+        html! {
+            {
+                for matrix.results.iter().map(|(build, results)| {
+                    html! {
+                        <tr>
+                         <td>{ &build.0 }</td>
+                         { self.render_matrix_cells(results, test_count) }
+                        </tr>
+                    }
+                })
+            }
+        }
+    }
+
     fn render_matrix(&self) -> Html<Model> {
         html! {
+            <>
             <Search: term=Rc::clone(&self.cmp_term),
                      completions=Some(Rc::clone(&self.cmp_completions)),
-                     onneed_more=|t| Msg::Send(ClientServer::Search(t)),/>
+                     onneed_more=|t| Msg::Send(ClientServer::Search(t)),
+                     onmatch=|t| Msg::Send(ClientServer::ResultMatrix(t)),/>
+            {
+                if let Some(ref matrix) = self.cmp_matrix {
+                    html! {
+                        <table class=("table","is-hoverable"),>
+                         <thead><tr>
+                          <th>{ "x" }</th>
+                          {
+                              for matrix.test_cases.iter().map(|t| html! {
+                                  <th>{ &t.0 }</th>
+                              })
+                          }
+                         </tr></thead>
+                         {
+                             self.render_matrix_rows(matrix)
+                         }
+                        </table>
+                    }
+                } else {
+                    html! { <p>{ "Type in a fully qualified test name in the box above" }</p> }
+                }
+            }
+            </>
         }
     }
 

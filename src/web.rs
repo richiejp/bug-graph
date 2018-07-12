@@ -21,7 +21,7 @@ use actix_web::fs::NamedFile;
 use actix_web::http::Method;
 use failure::Error;
 
-use repo::{Repo, GetSetVerts, Search};
+use repo::{Repo, GetSetVerts, Search, GetResultMatrix};
 use protocol::{ClientServer, ServerClient};
 
 pub struct AppState {
@@ -76,7 +76,9 @@ impl Ws {
             },
             ClientServer::ResultMatrix(uuid) => {
                 let err = "Failed to create result matrix";
-                //query
+                self.repo_query(GetResultMatrix(uuid), err, ctx, move |res| {
+                    ServerClient::ResultMatrix(uuid, res)
+                });
             },
         }
         Ok(())
