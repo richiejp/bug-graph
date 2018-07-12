@@ -181,21 +181,34 @@ impl Renderable<Model> for Model
             </div>
           </section>
           <section class="section",>
-            <div class=("container","is-fluid"),>
-              <div class="columns",>
-                <div class=("column","is-narrow"),>
-                  <button class="button", onclick=|_| Msg::Send(ClientServer::SetQuery(None)),>{
-                    "Get sets"
-                  }</button>
-                </div>
-               <div class=("column", "is-centered"),>{
-                   match self.tab {
-                       AppTab::Explore => self.render_set_list(),
-                       AppTab::Compare => self.render_matrix(),
-                   }
-               }</div>
-              </div>
-            </div>
+           <div class=("container","is-fluid"),>{
+               match self.tab {
+                   AppTab::Explore => html! {
+                       <div class="columns",>
+                        <div class=("column","is-narrow"),>
+                         <button class="button",
+                                 onclick=|_| Msg::Send(ClientServer::SetQuery(None)),>{
+                             "Get sets"
+                         }</button>
+                        </div>
+                        <div class=("column", "is-centered"),>{
+                            self.render_set_list()
+                        }</div>
+                       </div>
+                   },
+                   AppTab::Compare => html! {
+                       <>
+                       <div class="container",>
+                        <Search: term=Rc::clone(&self.cmp_term),
+                                 completions=Some(Rc::clone(&self.cmp_completions)),
+                                 onneed_more=|t| Msg::Send(ClientServer::Search(t)),
+                                 onmatch=|t| Msg::Send(ClientServer::ResultMatrix(t)),/>
+                       </div>
+                       <div class=("container","is-fluid"),>{ self.render_matrix() }</div>
+                       </>
+                   },
+               }
+           }</div>
           </section>
           <footer class="footer",><div class="container",>{
              for self.notices.iter().enumerate().map(|(i, m)| render_notice(i, m))
@@ -262,34 +275,24 @@ impl Model {
     }
 
     fn render_matrix(&self) -> Html<Model> {
-        html! {
-            <>
-            <Search: term=Rc::clone(&self.cmp_term),
-                     completions=Some(Rc::clone(&self.cmp_completions)),
-                     onneed_more=|t| Msg::Send(ClientServer::Search(t)),
-                     onmatch=|t| Msg::Send(ClientServer::ResultMatrix(t)),/>
-            {
-                if let Some(ref matrix) = self.cmp_matrix {
-                    html! {
-                        <table class=("table","is-hoverable"),>
-                         <thead><tr>
-                          <th>{ "x" }</th>
-                          {
-                              for matrix.test_cases.iter().map(|t| html! {
-                                  <th>{ &t.0 }</th>
-                              })
-                          }
-                         </tr></thead>
-                         {
-                             self.render_matrix_rows(matrix)
-                         }
-                        </table>
-                    }
-                } else {
-                    html! { <p>{ "Type in a fully qualified test name in the box above" }</p> }
-                }
+        if let Some(ref matrix) = self.cmp_matrix {
+            html! {
+                <table class=("table","is-narrow"),>
+                 <thead><tr>
+                  <th>{ "" }</th>
+                  {
+                      for matrix.test_cases.iter().map(|t| html! {
+                          <th>{ &t.0 }</th>
+                      })
+                  }
+                  </tr></thead>
+                  {
+                      self.render_matrix_rows(matrix)
+                  }
+                </table>
             }
-            </>
+        } else {
+            html! { <p>{ "Type in a fully qualified test name in the box above" }</p> }
         }
     }
 
