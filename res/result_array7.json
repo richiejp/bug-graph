@@ -1,0 +1,355 @@
+{
+   "environment" : {
+      "arch" : "s390x",
+      "product" : "sle:12-SP4",
+      "libc" : "libc.2.22",
+      "ltp_version" : "git-9e47dd0",
+      "harness" : "SUSE OpenQA",
+      "revision" : "0286",
+      "kernel" : "s390kvm015 4.12.14-94.28-default #1 SMP Wed Jul 4 07:17:31 UTC 2018 (b28389e) s390x s390x s390x GNU/Linux",
+      "gcc" : "gcc (SUSE Linux) 4.8.5"
+   },
+   "format" : "result_array:v2",
+   "results" : [
+      {
+         "test" : {
+            "result" : "PASS",
+            "duration" : 123.218444850296,
+            "log" : "\nSummary:\npassed   21184\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2011-0999 COMPLETE >>> 0\n"
+         },
+         "environment" : {},
+         "test_fqn" : "LTP:cve:cve-2011-0999",
+         "status" : "pass"
+      },
+      {
+         "test" : {
+            "log" : "\nSummary:\npassed   51203\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2011-2183 COMPLETE >>> 0\n",
+            "duration" : 13.1763002518564,
+            "result" : "PASS"
+         },
+         "environment" : {},
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2011-2183"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2011-2496",
+         "status" : "fail",
+         "environment" : {},
+         "test" : {
+            "duration" : 3.00966822914779,
+            "log" : "vma03       1  TCONF  :  vma03.c:146: __NR_mmap2 is not defined on your system\nvma03       2  TCONF  :  vma03.c:146: Remaining cases not appropriate for configuration\n### TEST cve-2011-2496 COMPLETE >>> 32\n",
+            "result" : "CONF"
+         }
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2012-0957",
+         "status" : "pass",
+         "test" : {
+            "result" : "PASS",
+            "log" : "\nSummary:\npassed   2\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2012-0957 COMPLETE >>> 0\n",
+            "duration" : 3.21156053431332
+         },
+         "environment" : {}
+      },
+      {
+         "test" : {
+            "result" : "PASS",
+            "duration" : 27.2421333529055,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2014-0196 COMPLETE >>> 0\n"
+         },
+         "environment" : {},
+         "test_fqn" : "LTP:cve:cve-2014-0196",
+         "status" : "pass"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2015-0235",
+         "status" : "pass",
+         "environment" : {},
+         "test" : {
+            "result" : "PASS",
+            "log" : "gethostbyname_r01    1  TPASS  :  not vulnerable\n### TEST cve-2015-0235 COMPLETE >>> 0\n",
+            "duration" : 3.2912675421685
+         }
+      },
+      {
+         "test" : {
+            "result" : "PASS",
+            "duration" : 4.09393946453929,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2015-7550 COMPLETE >>> 0\n"
+         },
+         "environment" : {},
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2015-7550"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2016-4470",
+         "status" : "pass",
+         "environment" : {},
+         "test" : {
+            "duration" : 4.16645627655089,
+            "log" : "keyctl01 1 TPASS: Bug not reproduced\n\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2016-4470 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         }
+      },
+      {
+         "test" : {
+            "duration" : 3.25276059284806,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  1\nwarnings 0\n### TEST cve-2016-4997 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         },
+         "environment" : {},
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2016-4997"
+      },
+      {
+         "test" : {
+            "duration" : 5.09210596047342,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2016-5195 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         },
+         "environment" : {},
+         "test_fqn" : "LTP:cve:cve-2016-5195",
+         "status" : "pass"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2016-7042",
+         "status" : "pass",
+         "test" : {
+            "result" : "PASS",
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2016-7042 COMPLETE >>> 0\n",
+            "duration" : 3.21879849396646
+         },
+         "environment" : {}
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "result" : "PASS",
+            "duration" : 21.2142222840339,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2016-7117 COMPLETE >>> 0\n"
+         },
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2016-7117"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2016-9604",
+         "status" : "pass",
+         "environment" : {},
+         "test" : {
+            "result" : "PASS",
+            "duration" : 3.09816125035286,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2016-9604 COMPLETE >>> 0\n"
+         }
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2016-10044 COMPLETE >>> 0\n",
+            "duration" : 4.25518828071654,
+            "result" : "PASS"
+         },
+         "test_fqn" : "LTP:cve:cve-2016-10044",
+         "status" : "pass"
+      },
+      {
+         "test" : {
+            "result" : "PASS",
+            "duration" : 3.22734715044498,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-2618 COMPLETE >>> 0\n"
+         },
+         "environment" : {},
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-2618"
+      },
+      {
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-2671",
+         "test" : {
+            "result" : "PASS",
+            "duration" : 5.22378505580127,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-2671 COMPLETE >>> 0\n"
+         },
+         "environment" : {}
+      },
+      {
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-5669",
+         "test" : {
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-5669 COMPLETE >>> 0\n",
+            "duration" : 3.21679901517928,
+            "result" : "PASS"
+         },
+         "environment" : {}
+      },
+      {
+         "test" : {
+            "duration" : 3.20493316464126,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-6951 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         },
+         "environment" : {},
+         "test_fqn" : "LTP:cve:cve-2017-6951",
+         "status" : "pass"
+      },
+      {
+         "test" : {
+            "result" : "PASS",
+            "log" : "\nSummary:\npassed   2\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-7308 COMPLETE >>> 0\n",
+            "duration" : 4.17601628229022
+         },
+         "environment" : {},
+         "test_fqn" : "LTP:cve:cve-2017-7308",
+         "status" : "pass"
+      },
+      {
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-7472",
+         "test" : {
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-7472 COMPLETE >>> 0\n",
+            "duration" : 4.09099123440683,
+            "result" : "PASS"
+         },
+         "environment" : {}
+      },
+      {
+         "test" : {
+            "duration" : 3.10544909909368,
+            "log" : "\nSummary:\npassed   2\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-12192 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         },
+         "environment" : {},
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-12192"
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "duration" : 3.12270258925855,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-12193 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         },
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-12193"
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "duration" : 3.12668203003705,
+            "log" : "\nSummary:\npassed   8\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-15274 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         },
+         "test_fqn" : "LTP:cve:cve-2017-15274",
+         "status" : "pass"
+      },
+      {
+         "test" : {
+            "result" : "PASS",
+            "duration" : 5.69914729334414,
+            "log" : "\nSummary:\npassed   2\nfailed   0\nskipped  1\nwarnings 0\n### TEST cve-2017-15299 COMPLETE >>> 0\n"
+         },
+         "environment" : {},
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-15299"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2017-15537",
+         "status" : "fail",
+         "environment" : {},
+         "test" : {
+            "result" : "CONF",
+            "log" : "### TEST cve-2017-15537 COMPLETE >>> 32\n",
+            "duration" : 3.08858000673354
+         }
+      },
+      {
+         "status" : "pass",
+         "test_fqn" : "LTP:cve:cve-2017-15951",
+         "test" : {
+            "result" : "PASS",
+            "log" : "\nSummary:\npassed   2\nfailed   0\nskipped  1\nwarnings 0\n### TEST cve-2017-15951 COMPLETE >>> 0\n",
+            "duration" : 5.70438724569976
+         },
+         "environment" : {}
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "result" : "PASS",
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-17807 COMPLETE >>> 0\n",
+            "duration" : 3.23442494124174
+         },
+         "test_fqn" : "LTP:cve:cve-2017-17807",
+         "status" : "pass"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2017-1000364",
+         "status" : "pass",
+         "environment" : {},
+         "test" : {
+            "duration" : 3.24689956568182,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-1000364 COMPLETE >>> 0\n",
+            "result" : "PASS"
+         }
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "log" : "### TEST cve-2017-5754 COMPLETE >>> 32\n",
+            "duration" : 3.08242542669177,
+            "result" : "CONF"
+         },
+         "status" : "fail",
+         "test_fqn" : "LTP:cve:cve-2017-5754"
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2017-17052",
+         "status" : "pass",
+         "test" : {
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-17052 COMPLETE >>> 0\n",
+            "duration" : 5.29547630436718,
+            "result" : "PASS"
+         },
+         "environment" : {}
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2017-16939 COMPLETE >>> 0\n",
+            "duration" : 3.25066257081926,
+            "result" : "PASS"
+         },
+         "test_fqn" : "LTP:cve:cve-2017-16939",
+         "status" : "pass"
+      },
+      {
+         "status" : "fail",
+         "test_fqn" : "LTP:cve:cve-2017-17053",
+         "environment" : {},
+         "test" : {
+            "duration" : 3.26146713644266,
+            "log" : "### TEST cve-2017-17053 COMPLETE >>> 32\n",
+            "result" : "CONF"
+         }
+      },
+      {
+         "test_fqn" : "LTP:cve:cve-2018-5803",
+         "status" : "pass",
+         "environment" : {},
+         "test" : {
+            "result" : "PASS",
+            "duration" : 4.22923491336405,
+            "log" : "\nSummary:\npassed   1\nfailed   0\nskipped  0\nwarnings 0\n### TEST cve-2018-5803 COMPLETE >>> 0\n"
+         }
+      },
+      {
+         "environment" : {},
+         "test" : {
+            "result" : "FAIL",
+            "duration" : 3.172776106745,
+            "log" : "\nSummary:\npassed   1\nfailed   2\nskipped  0\nwarnings 0\n### TEST cve-2018-1000001 COMPLETE >>> 1\n"
+         },
+         "test_fqn" : "LTP:cve:cve-2018-1000001",
+         "status" : "fail"
+      }
+   ]
+}
