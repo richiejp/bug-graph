@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BG!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+  </head>
+  <body>
+    <section class="hero is-primary">
+      <div class="hero-body">
+	<div class="container">
+	  <h1 class="title">
+            Building Bug Graph
+	  </h1>
+	  <h2 class="subtitle">
+	    with Rust, Actix, IndraDB, Bulma and Yew
+	  </h2>
+	</div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="container">
+	<div class="columns">
+	  <div class="column">
+	    <div class="content">
+	      <p>Every year SUSE gives its employees one week to work on whatever
+		they want. This is referred to as Hack Week. Last year I used it to
+		work on <a href="https://github.com/richiejp/rselisp">rselisp</a>
+		which is an Emacs Lisp interpreter written in Rust. I was quite happy
+		with how that went, but stopped working on the project because I feel
+		like there are more urgent things to work on than cloning Emacs.</p>
+	      <p>In particular I spend a lot of time just matching test
+		failures with existing Bugzilla
+		entries. <a href="http://open.qa/">OpenQA</a> has some
+		facilities to automatically tag test failures with bug
+		reports, but it is rather limited. Extending it would be
+		possible, but I'd rather do it externally and using different
+		technologies.</p>
+	      <p>I considered using Elixir instead of Rust, but I think that
+		Rust's performance and type system are better. Also, thanks to
+		<a href="https://actix.rs/">Actix</a>, I can use the actor
+		model with Rust. It is hardly as ergonomic as Elixir/erlang,
+		but appears to work pretty well. Although the compiler throws
+		out some pretty nasty type system errors due to the complexity
+		of Actix's type gymnastics.</p>
+	      <p>I have split the program into a number of actors, which, at
+		least in theory, can independently fail and be restarted. They
+		also run in different threads, so the application is naturally
+		multi-threaded and should scale fairly well if the repository
+		(repo) actor can be made to have multiple instances.</p>
+	      <p>Of course I am also using Actix-web which is known to be very
+		fast. On the client side I am using Yew which is also written
+		in Rust and is compiled to WASM. This means the entire project
+		is written in Rust with the exception of
+		the <a href="https://bulma.io/">Bulma CSS</a> library. Yew
+		also supports the actor model although I have not used that
+		element of it. I really like having everything written in the
+		same language and also not having to deal with Javascript
+		runtime errors which can be caught at compile time in
+		Rust.</p>
+	    </div>
+	  </div>
+	  <div class="column">
+	    <div class="content">
+	      <p>The client is a single page application which communicates
+		with the server over a single web socket connection. This is
+		definitely not the easiest way to write a web application, but
+		it is very lean and flexible. There is not much to say about
+		Bulma other than it generally just works and is easy to
+		use.</p>
+	      <p>For the database I am
+		using <a href="https://github.com/indradb">IndraDB</a>, which
+		is a graph database, and plain BTreeMap from the standard
+		library. Currently there is no persistence so at some point I
+		need to add a persistent key-value store. I would like a pure
+		Rust solution, so don't particularly want to use one IndraDB's
+		existing backends with the exception of the in-memory data
+		store which is basically just some BTreeMaps. I quite like the
+		look
+		of <a href="https://github.com/spacejam/sled">sled</a>. There
+		is also <a href="https://github.com/pingcap/tikv">TiKV</a>,
+		but it looks like more of a heavyweight solution.</p>
+	      <p>I am quite happy to only use a graph database and key-value
+		stores. For simple queries this may not be the easiest option,
+		but having full control over the data is beneficial for more
+		advanced tasks while also achieving good performance. I may
+		need to implement my own replication solution for scaling to
+		multiple nodes (unless I use TiKV), but that is not an
+		immediate concern.</p>
+	      <p>So far there is not much one can do in Bug Graph except view
+		a matrix of test results. Most of my time has been spent wiring
+		the various parts of the application together or trying to
+		understand how all these libraries and some Rust features
+		work. However I think that most of the infrastructure is in
+		place now so things should start to progress at a faster pace if
+		I get time to work on it.</p>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </section>
+    <footer class="footer">
+      <div class="content has-text-centered">
+	<p><a href="https://github.com/richiejp/bug-graph">Bug Graph</a></p>
+	<p>
+	  Authored by Richard Palethorpe (<a href="https://github.com/richiejp">richiejp</a>)
+	</p>
+      </div>
+    </footer>
+  </body>
+</html>
