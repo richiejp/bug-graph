@@ -8,14 +8,32 @@
     <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
   </head>
   <body>
-    <section class="hero is-primary">
+    <section class="hero is-primary is-bold is-small">
+      <div class="hero-head">
+	<nav class="navbar">
+	  <div class="container">
+            <div class="navbar-menu">
+              <div class="navbar-end">
+		<span class="navbar-item">
+		  <a class="button is-primary is-inverted" href="https://github.com/richiejp/bug-graph">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Repository</span>
+		  </a>
+		</span>
+              </div>
+            </div>
+	  </div>
+	</nav>
+      </div>
       <div class="hero-body">
 	<div class="container">
 	  <h1 class="title">
             Building Bug Graph
 	  </h1>
 	  <h2 class="subtitle">
-	    with Rust, Actix, IndraDB, Bulma and Yew
+            A social network for Bugs and Tests
 	  </h2>
 	</div>
       </div>
@@ -25,6 +43,8 @@
 	<div class="columns">
 	  <div class="column">
 	    <div class="content">
+	      <h3 class="title is-3">Initial development</h3>
+	      <h4 class="title is-4">With Rust, Actix, Yew and IndraDB</h4>
 	      <p>Every year SUSE gives its employees one week to work on whatever
 		they want. This is referred to as Hack Week. Last year I used it to
 		work on <a href="https://github.com/richiejp/rselisp">rselisp</a>
@@ -60,42 +80,64 @@
 		same language and also not having to deal with Javascript
 		runtime errors which can be caught at compile time in
 		Rust.</p>
+	      <p>The client is a single page application which communicates
+		with the server over a single web socket connection. This is
+		definitely not the easiest way to write a web application, but
+		it is very lean and flexible. There is not much for me to say
+		about Bulma other than it generally just works and is easy to
+		use. I am even using it for this document, because it
+		requires so little effort.</p>
 	    </div>
 	  </div>
 	  <div class="column">
 	    <div class="content">
-	      <p>The client is a single page application which communicates
-		with the server over a single web socket connection. This is
-		definitely not the easiest way to write a web application, but
-		it is very lean and flexible. There is not much to say about
-		Bulma other than it generally just works and is easy to
-		use.</p>
 	      <p>For the database I am
 		using <a href="https://github.com/indradb">IndraDB</a>, which
-		is a graph database, and plain BTreeMap from the standard
-		library. Currently there is no persistence so at some point I
-		need to add a persistent key-value store. I would like a pure
-		Rust solution, so don't particularly want to use one IndraDB's
-		existing backends with the exception of the in-memory data
-		store which is basically just some BTreeMaps. I quite like the
-		look
+		is a graph database, and plain BTreeMaps from the standard
+		library as a key-value store. Currently there is no
+		persistence so at some point I need to add a persistent
+		key-value store. I would like a pure Rust solution, so don't
+		particularly want to use one IndraDB's existing backends with
+		the exception of the in-memory data store which is also
+		implemented using BTreeMap. I quite like the look
 		of <a href="https://github.com/spacejam/sled">sled</a>. There
 		is also <a href="https://github.com/pingcap/tikv">TiKV</a>,
-		but it looks like more of a heavyweight solution.</p>
+		but it looks like a more of a heavyweight solution.</p>
 	      <p>I am quite happy to only use a graph database and key-value
 		stores. For simple queries this may not be the easiest option,
-		but having full control over the data is beneficial for more
-		advanced tasks while also achieving good performance. I may
-		need to implement my own replication solution for scaling to
-		multiple nodes (unless I use TiKV), but that is not an
-		immediate concern.</p>
+		but having full control over the data structures and
+		algorithms is beneficial for more advanced tasks while also
+		achieving good performance. I may need to implement my own
+		replication solution for scaling to multiple nodes (unless I
+		use TiKV), but that is not an immediate concern.</p>
 	      <p>So far there is not much one can do in Bug Graph except view
-		a matrix of test results. Most of my time has been spent wiring
-		the various parts of the application together or trying to
-		understand how all these libraries and some Rust features
+		a matrix of test results. Most of my time has been spent
+		wiring the various parts of the application together or trying
+		to understand how all these libraries and some Rust features
 		work. However I think that most of the infrastructure is in
-		place now so things should start to progress at a faster pace if
-		I get time to work on it.</p>
+		place now so things should start to progress at a faster pace
+		until I enter
+		the <a href="https://github.com/richiejp/bug-graph#current-state">next
+		phase</a> of the project</p>
+	      <p>For large, long term projects, I am a big fan of
+		reimplementing the wheel Vs having a huge messy dependency
+		graph. So I am not so happy with the number of large
+		dependencies the project has. With rselisp I barely had any
+		dependencies and I felt like I spent a lot more time creating
+		features than dealing with issues in third party
+		libraries. However I also wasn't exposed to a lot of Rust
+		functionality which has been heavily exploited by the likes of
+		Actix and Yew. So at least from a learning perspective, using
+		third party libraries has actually been beneficial on this
+		occasion, when usually it exposes you to less opportunities to
+		learn. The main reason for this is probably the immaturity of
+		these projects, so I have spent a lot of time reading their
+		code to figure out how to do something instead of just reading
+		the docs.</p>
+	      <p>For more info see
+	      the <a href="https://github.com/richiejp/bug-graph#synopsis">README</a>
+	      which also contains the present state of the project and what
+	      tasks I am probably working on.</p>
 	    </div>
 	  </div>
 	</div>
@@ -103,9 +145,8 @@
     </section>
     <footer class="footer">
       <div class="content has-text-centered">
-	<p><a href="https://github.com/richiejp/bug-graph">Bug Graph</a></p>
 	<p>
-	  Authored by Richard Palethorpe (<a href="https://github.com/richiejp">richiejp</a>)
+	  <a href="https://github.com/richiejp/bug-graph">Bug Graph</a> authored by Richard Palethorpe (<a href="https://github.com/richiejp">richiejp</a>)
 	</p>
       </div>
     </footer>
