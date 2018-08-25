@@ -13,8 +13,8 @@ serde_json = "1"
 uuid = { version = "0.5", features = ["v1", "v4", "serde"] }
 lazy_static = "*"
 futures = "0.1"
-actix = "0.5.6"
-actix-web = "0.6.9"
+actix = "0.7.3"
+actix-web = "0.7.4"
 log = { version = "0.4", features = ["max_level_info"] }
 indradb-lib = { git = "https://github.com/indradb/indradb" }
 failure = "0.1.1"

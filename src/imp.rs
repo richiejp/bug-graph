@@ -31,11 +31,11 @@ use repo::{Repo, NewResult, TestStatus};
 #[derive(Message)] pub struct Import(String);
 
 pub struct Importer {
-    repo: Addr<Syn, Repo>,
+    repo: Addr<Repo>,
 }
 
 impl Importer {
-    pub fn new(repo: Addr<Syn, Repo>) -> Importer {
+    pub fn new(repo: Addr<Repo>) -> Importer {
         Importer {
             repo,
         }
@@ -119,7 +119,7 @@ impl Handler<Import> for Importer {
             props
         };
 
-        let mut reqs: VecDeque<Request<Syn, Repo, NewResult>> = VecDeque::with_capacity(8);
+        let mut reqs: VecDeque<Request<Repo, NewResult>> = VecDeque::with_capacity(8);
         for r in v["results"].as_array().unwrap() {
             let mut props = env_props.clone();
 

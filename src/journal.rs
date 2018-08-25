@@ -24,7 +24,7 @@ use log::{self, Record, Level, Metadata, LevelFilter};
 static FACADE: JournalFacade = JournalFacade;
 
 thread_local!(
-    static JOURNAL: RefCell<Option<Addr<Syn, Journal>>> = RefCell::new(None);
+    static JOURNAL: RefCell<Option<Addr<Journal>>> = RefCell::new(None);
 );
 
 #[derive(Message)]
@@ -79,12 +79,11 @@ impl log::Log for JournalFacade {
                       r.level(), r.module_path().unwrap_or("Unknown"),
                       r.args());
         }
-        let arb = Arbiter::handle();
         let journal = JOURNAL.with(|cell| {
             if let Some(ref j) = *cell.borrow() {
                 return j.clone();
             }
-            let j = Arbiter::system_registry().get::<Journal>();
+            let j = System::current().registry().get::<Journal>();
             *cell.borrow_mut() = Some(j.clone());
             j
         });
@@ -95,7 +94,7 @@ impl log::Log for JournalFacade {
 
         match r.level() {
             Level::Error => journal.do_send(log),
-            _ => arb.spawn(journal.send(log).map_err(|_| ())),
+            _ => Arbiter::spawn(journal.send(log).map_err(|_| ())),
         }
     }
 

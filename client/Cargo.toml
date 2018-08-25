@@ -5,7 +5,7 @@ authors = ["Richard Palethorpe <richiejp@f-m.fm>"]
 
 [dependencies]
 failure = "0.1"
-stdweb = "0.4"
+stdweb = "0.4.8"
 serde = "1"
 serde_json = "1"
 serde_derive = "1"

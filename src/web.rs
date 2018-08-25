@@ -25,11 +25,11 @@ use repo::{Repo, GetSetVerts, Search, GetResultMatrix};
 use protocol::{ClientServer, ServerClient};
 
 pub struct AppState {
-    repo: Addr<Syn, Repo>,
+    repo: Addr<Repo>,
 }
 
 struct Ws {
-    repo: Addr<Syn, Repo>,
+    repo: Addr<Repo>,
 }
 
 impl Ws {
@@ -120,20 +120,20 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for Ws {
     }
 }
 
-fn index(_req: HttpRequest<AppState>) -> Result<NamedFile> {
+fn index(_req: &HttpRequest<AppState>) -> Result<NamedFile> {
     Ok(NamedFile::open("res/static/index.html")?)
 }
 
-fn ws_index(req: HttpRequest<AppState>) -> Result<HttpResponse> {
+fn ws_index(req: &HttpRequest<AppState>) -> Result<HttpResponse> {
     let repo = req.state().repo.clone();
-    ws::start(req, Ws { repo })
+    ws::start(&req, Ws { repo })
 }
 
 fn static_file(file: Path<String>) -> Result<NamedFile> {
     Ok(NamedFile::open(format!("res/static/{}", *file))?)
 }
 
-pub fn new(repo: Addr<Syn, Repo>) -> App<AppState>
+pub fn new(repo: Addr<Repo>) -> App<AppState>
 {
     App::with_state(AppState{ repo })
         .resource("/", |r| r.method(Method::GET).f(index))

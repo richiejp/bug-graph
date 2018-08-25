@@ -72,7 +72,7 @@ impl ProgArgs {
     }
 }
 
-fn start_web_server(web_arb: Addr<Syn, Arbiter>, repo: Addr<Syn, Repo>, url: String) {
+fn start_web_server(web_arb: Addr<Arbiter>, repo: Addr<Repo>, url: String) {
     web_arb.do_send(Execute::new(move || -> Result<(), ()> {
         match server::new(move || web::new(repo.clone())).bind(url.clone()) {
             Err(e) => error!("Failed to bind web server to {}: {}", url, e),
@@ -86,7 +86,7 @@ fn start_web_server(web_arb: Addr<Syn, Arbiter>, repo: Addr<Syn, Repo>, url: Str
 
 fn main() {
     let sys = System::new("Bug Graph");
-    let journal = Arbiter::system_registry().get::<Journal>();
+    let journal = System::current().registry().get::<Journal>();
     journal.do_send(journal::Log { src: "main".into(),
                                    msg: "Bug Graph 0.1.0".into() });
 
@@ -99,20 +99,22 @@ fn main() {
         let json_path = pargs.json_path.clone();
         let imp_arb = imp_arb.clone();
 
-        Arbiter::handle().spawn(repo_arb
-            .send(StartActor::new(|_| Repo::default()))
-            .then(move |repo| match repo {
-                Ok(repo) => {
-                    start_web_server(web_arb, repo.clone(), pargs.web.unwrap());
-                    imp_arb.send(StartActor::new(move |_| Importer::new(repo)))
-                },
-                Err(e) => panic!("Could not start repository: {}", e),
-            })
-            .then(|imp| match imp {
-                Ok(imp) => imp.send(ScanDir { dir: json_path, ext: "json".to_string() }),
-                Err(e) => panic!("Could not start importer: {}", e),
-            })
-            .map_err(|e| error!("Scan directory: {}", e)));
+        Arbiter::spawn(
+            repo_arb
+                .send(StartActor::new(|_| Repo::default()))
+                .then(move |repo| match repo {
+                    Ok(repo) => {
+                        start_web_server(web_arb, repo.clone(), pargs.web.unwrap());
+                        imp_arb.send(StartActor::new(move |_| Importer::new(repo)))
+                    },
+                    Err(e) => panic!("Could not start repository: {}", e),
+                })
+                .then(|imp| match imp {
+                    Ok(imp) => imp.send(ScanDir { dir: json_path, ext: "json".to_string() }),
+                    Err(e) => panic!("Could not start importer: {}", e),
+                })
+                .map_err(|e| error!("Scan directory: {}", e))
+        );
     }
 
     journal::init();
